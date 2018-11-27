@@ -1,0 +1,107 @@
+   #
+   # calculate the gradient dyout/dx and the second derivative  of ddyout/dxdw 
+   #
+   def ddyoutdxdw_gradient1(self,xtrain,w):
+   
+      ddyoutdxdw  = [0.0]*self.matsize*self.nodes[0]*self.nodes[-1]
+      dyoutdx     = self.gradients_evaluate(xtrain,w)
+
+      ### define ypp and dxdw template
+      dxdw = []
+      dypdw = []
+      for layer in range(self.nlayers):
+         n = self.nodes[layer]
+         dxdw.append([0.0]*n)
+         dypdw.append([0.0]*n)
+         for k in range(n):
+            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k])
+
+      
+      for layer in range(self.nlayers-1):
+         n = self.nodes[layer]
+         m = self.nodes[layer+1]
+         shift = self.wshift[layer]
+         for j in range(n):
+            for i in range(m):
+               # dw/dwij
+               wwp = [0.0]*m*n
+               wwp[i+j*m] = 1.0
+               
+               for q in range(self.nlayers):
+                  dxdw[q]  = [0.0]*n
+                  dypdw[q] = [0.0]*n
+
+               # define needed dxdw's and dfp/dw's
+               dxdw[layer+1] = self.__matmul(m,1,n,wwp,self.y[layer])
+               for k in range(m): dypdw[layer+1][k] = self.ypp[layer+1][k]*dxdw[layer+1][k]
+               for q in range(layer+2,self.nlayers):
+                  nqm = self.nodes[q-1]
+                  mqm = self.nodes[q]
+                  shiftqm = self.wshift[q-1]
+                  wwq = w[shiftqm:shiftqm+mqm*nqm]
+                  tmp     = self.__matfpmullayer(mqm,nqm,wwq,q-1)
+                  dxdw[q] = self.__matmul(mqm,1,nqm,tmp,dxdw[q-1])
+                  for k in range(mqm): dypdw[q][k] = self.ypp[q][k]*dxdw[q][k]
+                
+               # calculate dydxij
+               nlayers = self.nlayers
+               nmax    = self.nodes[nlayers-1]
+               dydxij  = [0.0]*nmax*nmax
+               for k in range(nmax):
+                  dydxij[k+k*nmax] = self.yp[nlayers-1][k]
+               for q in range(nlayers-2,layer,-1):
+                  nq = self.nodes[q]
+                  mq = self.nodes[q+1]
+                  shiftq = self.wshift[q]
+                  dydxij = self.__matmul(nmax,nq,mq,dydxij,w[shiftq:shiftq+mq*nq])
+                  dydxij = self.__matfpmullayer(nmax,nq,dydxij,q)
+               dydxij = self.__matmul(nmax,n,m,dydxij,wwp)
+               dydxij = self.__matfpmullayer(nmax,n,dydxij,layer)
+               for q in range(layer-1,-1,-1):
+                  nq = self.nodes[q]
+                  mq = self.nodes[q+1]
+                  shiftq = self.wshift[q]
+                  dydxij = self.__matmul(nmax,nq,mq,dydxij,w[shiftq:shiftq+mq*nq])
+                  dydxij = self.__matfpmullayer(nmax,nq,dydxij,q)
+
+               for rr in range(nlayers-1,layer,-1):
+                  dydxrr  = [0.0]*nmax*nmax
+                  if (rr==(nlayers-1)):
+                     for k in range(nmax):
+                        dydxrr[k+k*nmax] = dypdw[nlayers-1][k]
+                  else:
+                     for k in range(nmax):
+                        dydxrr[k+k*nmax] = self.yp[nlayers-1][k]
+                     for q in range(nlayers-2,rr,-1):
+                        nq = self.nodes[q]
+                        mq = self.nodes[q+1]
+                        shiftq = self.wshift[q]
+                        dydxrr = self.__matmul(nmax,nq,mq,dydxrr,w[shiftq:shiftq+mq*nq])
+                        dydxrr = self.__matfpmullayer(nmax,nq,dydxrr,q)
+                     nrr = self.nodes[rr]
+                     mrr = self.nodes[rr+1]
+                     shiftrr = self.wshift[rr]
+                     dydxrr = self.__matmul(nmax,nrr,mrr,dydxrr,w[shiftrr:shiftrr+mrr*nrr])
+                     for l in range(nrr):
+                        for k in range(nmax):
+                           dydxrr[k+l*nmax] *= dypdw[rr][l]
+                  
+                  for q in range(rr-1,-1,-1):
+                     nq = self.nodes[q]
+                     mq = self.nodes[q+1]
+                     shiftq = self.wshift[q]
+                     dydxrr = self.__matmul(nmax,nq,mq,dydxrr,w[shiftq:shiftq+mq*nq])
+                     dydxrr = self.__matfpmullayer(nmax,nq,dydxrr,q)
+                  for k in range(len(dydxij)):
+                    dydxij[k] += dydxrr[k]
+                  
+               
+               for k in range(len(dydxij)):
+                  shiftk = k*self.matsize
+                  de     = 1.0
+                  ddyoutdxdw[shiftk+shift+i+j*m] += de*dydxij[k]
+               
+
+      return (dyoutdx,ddyoutdxdw)
+      
+

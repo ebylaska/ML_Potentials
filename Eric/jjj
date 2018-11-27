@@ -1,0 +1,37 @@
+
+
+   #
+   # calculate the gradient of yout wrt w 
+   #
+   def dyoutdw_gradient(self,xtrain,w):
+      dyoutdw  = [0.0]*self.matsize*self.nodes[-1]
+      yout = self.evaluate(xtrain,w)
+      for i in range(self.nodes[-1]):
+         shifti = self.matsize*i
+         de =  1.0
+         layer = self.nlayers - 1
+         tmp0 = de*self.fp[layer](self.x[layer][i])
+         for layer in range(self.nlayers-2,-1,-1):
+            n = self.nodes[layer]
+            m = self.nodes[layer+1]
+            shift = self.wshift[layer]
+            ww = w[shift:shift+m*n]
+            for k in range(n):
+               for j in range(m):
+                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k])
+
+            if (layer==self.nlayers-2):
+               for k in range(n):
+                  dyoutdw[shifti+shift+i+k*m] += tmp0*self.y[layer][k]
+               tmp1 = []
+               for j in range(n):
+                  xx = tmp0*ww[i+j*m]
+                  tmp1.append(xx)
+            else:
+               for k in range(n):
+                  for j in range(m):
+                     dyoutdw[shifti+shift+j+k*m] += tmp1[j]*self.y[layer][k]
+               tmp1 = self.__matmul(1,n,m,tmp1,ww)
+            
+      return (yout,dyoutdw)
+
