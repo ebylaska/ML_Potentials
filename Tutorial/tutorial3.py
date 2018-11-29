@@ -129,7 +129,7 @@ plot_pathenergy(plot,energies)
 
 ###plot the relative energies using html obfiscation ###
 data = "#Title A Simple html plot for Raymond\n"
-data += "#Labels frame_number Relative_Energy\n"
+data += "#Labels frame_number Energy\n"
 for i in range(len(energies)):
    data += "%f %f\n" % (i*1.0,energies[i])
 
