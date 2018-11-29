@@ -71,6 +71,8 @@ def read_fei_urlfile(urlfilename):
 
 
 
+####################### main program ##############################
+
 ##### Read in fei file lazilly and do a simple print out of the data ####
 frame = 0
 for (symbols,rions,fions,energy) in read_fei_urlfile(feifilename):

@@ -2,15 +2,15 @@ from __future__ import print_function
 
 ### Need to make sure these libraries can be loaded! ###
 import os,sys,subprocess,urllib2,requests,getopt
-import xyplotter
+import xyplotter,webbrowser
 
 
 #
-# This program extends upon tutorial1.py to demonstrate how to use a simple python plotter written with turtle graphics.
+# This program extends upon tutorial1.py to demonstrate how to use a simple html that plots data where the html was generated from a website.
 #
 # To run 
 #
-#  python tutorial2.py
+#  python tutorial3.py
 #
 #
 # This code is assuming that your python is a python 2.7 and that you have the above libraries available on your system.  
@@ -27,6 +27,11 @@ import xyplotter
 #### going to read a URL ####
 #feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/ForJim/Position-Specific-Isotopes/1M/Pyruvate/AIMD/tequil-2018-3-2-12.fei"
 feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/BES/Mackinawite/Cascade-hopper/udimer-fes.fei"
+
+
+### url's we need to generate complex html codes ###
+arrows_post_url    = "https://arrows.emsl.pnnl.gov/api/upload/"
+arrows_get_url     = "https://arrows.emsl.pnnl.gov/api/eric_view/genhtml="
 
 
 
@@ -95,7 +100,6 @@ def plot_pathenergy(plot,energies):
 
 
 
-####################### main program ##############################
 
 ### started from scratch - build up path from l=0 ###
 plot  = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Simple Plot for Raymond",2)
@@ -116,8 +120,46 @@ for (symbols,rions,fions,energy) in read_fei_urlfile(feifilename):
    frame += 1
 
 
-###plot the relative energies ###
+
+####################### main program ##############################
+
+###plot the relative energies using Turtle graphics###
 plot_pathenergy(plot,energies)
+
+
+###plot the relative energies using html obfiscation ###
+data = "#Title A Simple html plot for Raymond\n"
+data += "#Labels frame_number Relative_Energy\n"
+for i in range(len(energies)):
+   data += "%f %f\n" % (i*1.0,energies[i])
+
+filename = "tutorial3.dat"
+with open(filename,'w') as ff:
+   ff.write(data)
+
+### post the data to the website ###
+print(" - uploading " + filename)
+ofile = open(filename,'r')
+files = {'file': ofile}
+try:
+   r = requests.post(arrows_post_url, files=files)
+   #print "POST return=",r.text
+finally:
+   ofile.close()
+
+### get the html from website and then open in browser ###
+try:
+   rr = requests.get(arrows_get_url + "\"" + filename + "\"")
+   print(" - API success")
+   html = rr.text
+   path = os.path.abspath('tutorial3.html')
+   url = 'file://' + path
+   with open(path, 'w') as ff:
+      ff.write(html)
+   webbrowser.open(url)
+except:
+   print(" - API Failed")
+print
 
 
 ###wait for return so that plot can be seen###

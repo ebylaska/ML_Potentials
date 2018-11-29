@@ -2,15 +2,15 @@ from __future__ import print_function
 
 ### Need to make sure these libraries can be loaded! ###
 import os,sys,subprocess,urllib2,requests,getopt
-import xyplotter
+import xyplotter,webbrowser
 
 
 #
-# This program extends upon tutorial1.py to demonstrate how to use a simple python plotter written with turtle graphics.
+# This program is just like tutorial3.py except a function is used to generate the html rather than a webbsite.
 #
 # To run 
 #
-#  python tutorial2.py
+#  python tutorial4.py
 #
 #
 # This code is assuming that your python is a python 2.7 and that you have the above libraries available on your system.  
@@ -27,6 +27,23 @@ import xyplotter
 #### going to read a URL ####
 #feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/ForJim/Position-Specific-Isotopes/1M/Pyruvate/AIMD/tequil-2018-3-2-12.fei"
 feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/BES/Mackinawite/Cascade-hopper/udimer-fes.fei"
+
+
+
+
+#### simple functions to check if string is a number ####
+def evalnum(s):
+   try:
+      return int(s)
+   except ValueError:
+      return float(s)
+
+def isevalnum(s):
+   try:
+      x = evalnum(s)
+      return True
+   except:
+      return False
 
 
 
@@ -95,6 +112,102 @@ def plot_pathenergy(plot,energies):
 
 
 
+
+##############################################
+#                                            #
+#             xydata_plotdatajs              #
+#                                            #
+##############################################
+# This function generates html code to plot
+# data.
+def xydata_plotdatajs(edat,label):
+
+   title = label
+   xylabels = ''
+   if ('#Title' in edat):
+      title = edat.split("#Title")[1].split('\n')[0]
+   else:
+      title = label
+   if ('#Labels' in edat): xylabels = edat.split("#Labels")[1].split('\n')[0]
+
+   elist = edat.strip().split("\n")
+   while ("#" in elist[0]):
+      elist = elist[1:]
+
+   ny = len(elist[0].split())-1
+   hasheader = not isevalnum(elist[0].split()[0])
+
+   if (hasheader):
+      xlabel = elist[0].split()[0]
+      xdat = "['%s'," % (elist[0].split()[0])
+      ydat = []
+      for i in range(ny):
+         ydat.append("['%s'," % (elist[0].split()[i+1]))
+      elist = elist[1:]
+   else:
+      xlabel = 'x'
+      xdat = "['x',"
+      ydat = []
+      for i in range(ny):
+         ydat.append("['y%d'," % i)
+      if (xylabels!=''):
+         xylist = xylabels.split()
+         xlabel = xylist[0]
+         xdat = "['%s'," % (xylist[0])
+         for i in range(1,len(xylist)):
+            ydat[i-1] = "['%s'," % (xylist[i])
+
+
+   for ee in elist:
+      ss = ee.split()
+      if ("#" not in ss[0]):
+         xdat += ss[0] + ", "
+         for i in range(ny):
+            ydat[i] += ss[i+1] + ", "
+   xdat  = xdat.rstrip(',') + "]"
+   for i in range(ny):
+      ydat[i] = ydat[i].rstrip(',') + "]"
+
+   msg4 = "<html>\n"
+   msg4 += '''
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.9/c3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.6.9/c3.min.js"></script>
+    <br> <center><b> %s </b></center>
+    <div id="chart"></div>
+    <script type="text/javascript">
+    var chart = c3.generate({
+       bindto: '#chart',
+       size: { height: 480},
+       data: {
+         type: 'spline',
+         x: '%s',
+         columns: [
+           %s  ''' % (title,xlabel,xdat)
+   for i in range(ny): msg4 += ", %s" % (ydat[i])
+   msg4 += '''
+         ]
+       },
+       axis: {
+           x: {
+               label: '%s',
+               tick: {count: 10, format: d3.format(".2f"), culling: false}
+           },
+           y: {
+               label: 'y data'
+           }
+       }
+    });
+    </script>
+    ''' % (xlabel)
+
+   msg4 += "</html>\n"
+
+   return msg4
+
+
+
+
 ####################### main program ##############################
 
 ### started from scratch - build up path from l=0 ###
@@ -116,8 +229,23 @@ for (symbols,rions,fions,energy) in read_fei_urlfile(feifilename):
    frame += 1
 
 
-###plot the relative energies ###
+###plot the relative energies using Turtle graphics###
 plot_pathenergy(plot,energies)
+
+
+###plot the relative energies using html ###
+data = "#Title A Simple html plot for Raymond\n"
+data += "#Labels frame_number Relative_Energy\n"
+for i in range(len(energies)):
+   data += "%f %f\n" % (i*1.0,energies[i])
+
+html = xydata_plotdatajs(data,"XY plot")
+
+path = os.path.abspath('tutorial4.html')
+url = 'file://' + path
+with open(path, 'w') as ff:
+   ff.write(html)
+webbrowser.open(url)
 
 
 ###wait for return so that plot can be seen###
