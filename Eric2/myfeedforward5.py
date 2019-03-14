@@ -16,7 +16,7 @@ class MyFeedForward(object):
     Attributes:
        
    """
-   def __init__(self,nodes,fs,fps,fpps):
+   def __init__(self,nodes,fs,fps,fpps,biases=[]):
       self.nlayers = len(nodes)
       self.nodes   = nodes
       self.f       = fs
@@ -26,12 +26,17 @@ class MyFeedForward(object):
       self.y = []
       self.yp = []
       self.ypp = []
+      self.biases = []
       for layer in range(self.nlayers):
          n = self.nodes[layer]
          self.x.append([0.0]*n)
          self.y.append([0.0]*n)
          self.yp.append([0.0]*n)
          self.ypp.append([0.0]*n)
+         self.biases.append([0.0]*n)
+      for ib in range(len(biases)): 
+         for j in range(len(biases[ib])):
+            self.biases[ib][j] = biases[ib][j]
       self.matsize = 0
       self.wshift = []
       for layer in range(self.nlayers-1):
@@ -97,14 +102,14 @@ class MyFeedForward(object):
    def evaluate(self,xin,w):
       for i in range(self.nodes[0]): 
          self.x[0][i] = xin[i]
-         self.y[0][i] = self.f[0](xin[i])
+         self.y[0][i] = self.f[0](xin[i]+self.biases[0][i])
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
          shift = self.wshift[layer]
          self.x[layer+1] = self.__matmul(m,1,n,w[shift:shift+m*n],self.y[layer])
          for i in range(m): 
-            self.y[layer+1][i] = self.f[layer+1](self.x[layer+1][i])
+            self.y[layer+1][i] = self.f[layer+1](self.x[layer+1][i]+self.biases[layer+1][i])
 
       return self.y[layer+1][:]
 
@@ -119,7 +124,7 @@ class MyFeedForward(object):
       for layer in range(self.nlayers):
          n = self.nodes[layer]
          for k in range(n):
-            self.yp[layer][k] = self.fp[layer](self.x[layer][k])
+            self.yp[layer][k] = self.fp[layer](self.x[layer][k]+self.biases[layer][k])
 
       #...calculate dydx
       nlayers = self.nlayers
@@ -150,7 +155,7 @@ class MyFeedForward(object):
          de =  2.0*(yout[i]-ytrain[i])
 
          layer = self.nlayers - 1
-         tmp0 = de*self.fp[layer](self.x[layer][i])
+         tmp0 = de*self.fp[layer](self.x[layer][i]+self.biases[layer][i])
          for layer in range(self.nlayers-2,-1,-1):
             n = self.nodes[layer]
             m = self.nodes[layer+1]
@@ -158,7 +163,7 @@ class MyFeedForward(object):
             ww = w[shift:shift+m*n]
             for k in range(n):
                for j in range(m):
-                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k])
+                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k]+self.biases[layer][k])
 
             if (layer==self.nlayers-2):
                for k in range(n):
@@ -193,7 +198,7 @@ class MyFeedForward(object):
          dxdw.append([0.0]*n)
          dypdw.append([0.0]*n)
          for k in range(n):
-            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k])
+            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+self.biases[layer][k])
 
       #print "dyp2/dw1=",self.ypp[2][0]*self.y[1][0]
       #print "dyp1/dw1=",0.0
@@ -308,7 +313,7 @@ class MyFeedForward(object):
          shifti = self.matsize*i
          de =  1.0
          layer = self.nlayers - 1
-         tmp0 = de*self.fp[layer](self.x[layer][i])
+         tmp0 = de*self.fp[layer](self.x[layer][i]+self.biases[layer][i])
          for layer in range(self.nlayers-2,-1,-1):
             n = self.nodes[layer]
             m = self.nodes[layer+1]
@@ -316,7 +321,7 @@ class MyFeedForward(object):
             ww = w[shift:shift+m*n]
             for k in range(n):
                for j in range(m):
-                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k])
+                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k]+self.biases[layer][k])
 
             if (layer==self.nlayers-2):
                for k in range(n):
@@ -351,7 +356,7 @@ class MyFeedForward(object):
          dxdw.append([0.0]*n)
          dypdw.append([0.0]*n)
          for k in range(n):
-            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k])
+            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+self.biases[layer][k])
 
       
       for layer in range(self.nlayers-1):

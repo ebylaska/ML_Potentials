@@ -5,6 +5,7 @@ class AtomsFM:
    """AtomFunctions - defines functions for Atom Feature mapping
 
    The following functions are defined
+      1) f0(rion,i) = Sum(j!=i) (rij-r0)
       1) f1(rion,i) = Sum(j!=i) fcut(rij)
       2) f2(rion,i) = Sum(j!=i) exp(-eta*(rij-rs)**2)*fcut(rij)
       3) f3(rion,i) = Sum(j!=i) cos(kappa*rij)*fcut(rij)
@@ -57,6 +58,7 @@ class AtomsFM:
 
    def __init__(self,parameterslist):
       #print("hello???")
+      self.p0s = []
       self.p1s = []
       self.p2s = []
       self.p3s = []
@@ -65,6 +67,7 @@ class AtomsFM:
       self.fmsize = len(parameterslist)
       count = 0
       for parameters in parameterslist:
+         if parameters[0] == 0: self.p0s.append([count]+parameters[1:])
          if parameters[0] == 1: self.p1s.append([count]+parameters[1:])
          if parameters[0] == 2: self.p2s.append([count]+parameters[1:])
          if parameters[0] == 3: self.p3s.append([count]+parameters[1:])
@@ -90,6 +93,8 @@ class AtomsFM:
             rij2 = xij*xij + yij*yij + zij*zij
             rij  = math.sqrt(rij2)
             if (rij<=Rcut):
+               for p0 in self.p0s:
+                  fm[p0[0]] += (rij-p0[1])
                for p1 in self.p1s:
                   fm[p1[0]] += self.__fcut(p1[1],rij)
                   cnt[p1[0]]+= 1.0
@@ -129,6 +134,9 @@ class AtomsFM:
                            fm[p5[0]] += tmp0*tmp1*tmp2*self.__fcut(p5[1],rij)*self.__fcut(p5[1],rik)
                            cnt[p5[0]]+= 1.0
 
+      for p0 in self.p1s:
+         if (cnt[p0[0]]>0.0):
+            fm[p0[0]] /= cnt[p0[0]]
       for p1 in self.p1s:
          if (cnt[p1[0]]>0.0):
             fm[p1[0]] /= cnt[p1[0]]
@@ -163,6 +171,16 @@ class AtomsFM:
             rij2 = xij*xij + yij*yij + zij*zij
             rij  = math.sqrt(rij2)
             if (rij<=Rcut):
+               for p0 in self.p0s:
+                  fm[p0[0]] += (rij-p0[1])
+                  dfmdr = 1.0
+                  gradfm[p0[0]*nion3 + 3*i]     += dfmdr*(xij/rij)
+                  gradfm[p0[0]*nion3 + 3*j]     -= dfmdr*(xij/rij)
+                  gradfm[p0[0]*nion3 + 3*i + 1] += dfmdr*(yij/rij)
+                  gradfm[p0[0]*nion3 + 3*j + 1] -= dfmdr*(yij/rij)
+                  gradfm[p0[0]*nion3 + 3*i + 2] += dfmdr*(zij/rij)
+                  gradfm[p0[0]*nion3 + 3*j + 2] -= dfmdr*(zij/rij)
+                  cnt[p0[0]]+= 1.0
                for p1 in self.p1s:
                   fm[p1[0]] += self.__fcut(p1[1],rij)
                   dfmdr = self.__dfcut(p1[1],rij)
@@ -293,6 +311,11 @@ class AtomsFM:
 
                            cnt[p5[0]]+= 1.0
 
+      for p0 in self.p0s:
+         if (cnt[p0[0]]>0.0):
+            fm[p0[0]] /= cnt[p0[0]]
+            for jj in range(nion3): 
+               gradfm[jj + p0[0]*nion3] /= cnt[p0[0]]
       for p1 in self.p1s:
          if (cnt[p1[0]]>0.0):
             fm[p1[0]] /= cnt[p1[0]]

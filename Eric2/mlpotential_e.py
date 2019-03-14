@@ -51,10 +51,11 @@ class mlpotential_e:
                p = []
                for s in ss:
                   if s.isdigit():
-                     p += [int(s)]
-                  elif isFloat(s):
+                     p += [int(s)] 
+                  elif isFloat(s): 
                      p += [float(s)]
-               ok = p[0] in range(1,6)
+               ok = p[0] in range(0,6)
+               if (p[0]==0): ok = ok and (len(p)==2)
                if (p[0]==1): ok = ok and (len(p)==2)
                if (p[0]==2): ok = ok and (len(p)==4)
                if (p[0]==3): ok = ok and (len(p)==3)
@@ -69,9 +70,13 @@ class mlpotential_e:
 
       #### define NN machine ####
       self.nlayers = nlayers
-      sigmoid      = lambda x: 1.0/(1.0+math.exp(-x))
-      sigmoidp     = lambda x: math.exp(-x)/(math.exp(-x)+1.0)**2
-      sigmoidpp    = lambda x: 2*math.exp(-2*x)/(math.exp(-x)+1.0)**3 - math.exp(-x)/(math.exp(-x)+1.0)**2
+      #sigmoid      = lambda x: 1.0/(1.0+math.exp(-x))
+      #sigmoidp     = lambda x: math.exp(-x)/(math.exp(-x)+1.0)**2
+      #sigmoidpp    = lambda x: 2*math.exp(-2*x)/(math.exp(-x)+1.0)**3 - math.exp(-x)/(math.exp(-x)+1.0)**2
+
+      sigmoid      = lambda x: math.tanh(x)
+      sigmoidp     = lambda x: (1.0/math.cosh(x))**2
+      sigmoidpp    = lambda x: -2.0*math.tanh(x)*(1.0/math.sech(x))**2
       #anparameters = [nparameters]
       #asigmoid   = [lambda x: x]
       #asigmoidp  = [lambda x: 1]
@@ -104,71 +109,27 @@ class mlpotential_e:
          self.nn_weights += self.nn_machine.initial_w()
       self.nw = len(self.nn_weights)/nion
 
-      alpha = 0.01/nion
+      alpha = 0.05
       for (symbols,rions,fions,energy) in read_fei_file(feidatafile):
+         #aalpha = alpha*random.random()
          aalpha = alpha*random.random()
          etmp = []
          dedw = []
          for ii in range(nion):
             fm = self.afm(rions,ii)
+            print "fm=",fm
             eee = self.nn_machine.dyoutdw_gradient(fm,self.nn_weights[ii*self.nw:(ii+1)*self.nw])
             etmp += eee[0]
             dedw += eee[1]
+            #print "etmp=",ii,eee[0],energy
 
-            error = math.sqrt((sum(etmp) - energy)**2)
-            derror1detmp    = 2.0*(sum(etmp) - energy)
+         error = math.sqrt((sum(etmp) - energy)**2)
+         derror1detmp    = 2.0*(sum(etmp) - energy)
 
          for i in range(len(self.nn_weights)):
             self.nn_weights[i] -= aalpha*derror1detmp*dedw[i]
 
-
-      #### training the weights using simple steepest descent ###
-      error0 = 9e9
-      alpha = 0.01/nion
-      for it0 in range(nsweeps):
-         print("Training sweep ", it0)
-         sumerror = 0.0
-         error0_old = error0
-         error0 = 0.0
-         maxerror = 0.0
-         nframes = 0
-         dedwall = [0.0]*len(self.nn_weights)
-         for (symbols,rions,fions,energy) in read_fei_file(feidatafile):
-            aalpha = alpha*random.random()
-            etmp0 = []
-            etmp = []
-            dedw = []
-            for ii in range(nion):
-               fm = self.afm(rions,ii)
-               eee = self.nn_machine.dyoutdw_gradient(fm,self.nn_weights[ii*self.nw:(ii+1)*self.nw])
-               etmp += eee[0]
-               dedw += eee[1]
-            
-            error0 += (sum(etmp) - energy)**2
-            error = math.sqrt((sum(etmp) - energy)**2)
-            derror1detmp    = 2.0*(sum(etmp) - energy)
-      
-            #print "dedw=",dedw
-
-            #new_w = [0.0]*len(self.nn_weights)
-            #for i in range(len(self.nn_weights)):
-            #   new_w[i] = self.nn_weights[i] - aalpha*derror1detmp*dedw[i]
-            #self.nn_weights = new_w
-
-            for i in range(len(self.nn_weights)):
-               dedwall[i] += derror1detmp*dedw[i]
-
-            sumerror += error
-            if (error>maxerror): maxerror = error
-            nframes += 1
-            #print nframes,sum(etmp),energy,error
-
-         print(" - average error=", sumerror/nframes, " maxerror=",maxerror, " len(w)=",len(self.nn_weights), " total error=",error0, " alpha=",alpha)
-         if (error0>error0_old): alpha *= 0.5
-         for i in range(len(self.nn_weights)):
-           self.nn_weights[i] -= alpha*dedwall[i]/nframes
-
-      print("Done training\n")
+      self.nn_machine.print_w(self.nn_weights[0])
 
       print("Checking Energies and Forces")
       #nion3 = 3*nion
