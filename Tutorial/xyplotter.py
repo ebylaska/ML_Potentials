@@ -90,6 +90,22 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
          t.goto(x1-0.80*dx,y2-(2.70+i*0.31)*dy)
          t.pendown()
          t.write("%s" % (yname[i]), font=fnt)
+   elif (ltype==4):
+      xname = "Distance a.u."
+      yname = "Energy a.u."
+      xf  = "%.2f"
+      yf  = "%.6f"
+      dxf = 0.60
+      fnt = ('Arial', 12, 'normal')
+      t.penup()
+      t.goto(0.5*(x1+x2)-0.1*dx,y1-0.90*dy)
+      t.pendown()
+      t.write("%s" % (xname), font=fnt)
+      for i in range(len(yname)):
+         t.penup()
+         t.goto(x1-0.80*dx,y2-(2.70+i*0.31)*dy)
+         t.pendown()
+         t.write("%s" % (yname[i]), font=fnt)
    else:
       xf  = "%.1e"
       yf  = "%.9e"
@@ -105,7 +121,7 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
    t.penup()
    t.goto(x1+0.25*(x2-x1),y1-0.5*dy)
    t.pendown()
-   t.write(xf % (x1+0.25*(x2+x1)), font=fnt)
+   t.write(xf % (x1+0.25*(x2-x1)), font=fnt)
 
    t.penup()
    t.goto(0.5*(x1+x2),y1-0.5*dy)
@@ -115,7 +131,7 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
    t.penup()
    t.goto(x1+0.75*(x2-x1),y1-0.5*dy)
    t.pendown()
-   t.write(xf % (x1+0.75*(x2+x1)), font=fnt)
+   t.write(xf % (x1+0.75*(x2-x1)), font=fnt)
 
    t.penup()
    t.goto(x2,y1-0.5*dy)
@@ -253,6 +269,22 @@ class xyplotter:
          for i in range(1,n):
             x = float(i)/float(n-1)
             self.t1.goto(x,y[i])
+         self.s1.update()
+
+   def dotplot1(self,y,color=None):
+      n = len(y)
+      if (n>0):
+         if (color==None):
+            ctmp = "black"
+         else:
+            ctmp = color
+         self.t1.tracer(10000)
+         self.t1.hideturtle()
+         self.t1.penup()
+         for i in range(n):
+            x = float(i)/float(n-1)
+            self.t1.goto(x,y[i])
+            self.t1.dot(5,ctmp)
          self.s1.update()
 
 

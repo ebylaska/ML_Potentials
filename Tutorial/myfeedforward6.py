@@ -1,4 +1,5 @@
 
+import math
 import numpy as np9
 
 #def matmul(m,n,k,a,b):
@@ -16,7 +17,7 @@ class MyFeedForward(object):
     Attributes:
        
    """
-   def __init__(self,nodes,fs,fps,fpps,biases=[]):
+   def __init__(self,nodes,fs,fps,fpps):
       self.nlayers = len(nodes)
       self.nodes   = nodes
       self.f       = fs
@@ -26,19 +27,20 @@ class MyFeedForward(object):
       self.y = []
       self.yp = []
       self.ypp = []
-      self.biases = []
       for layer in range(self.nlayers):
          n = self.nodes[layer]
          self.x.append([0.0]*n)
          self.y.append([0.0]*n)
          self.yp.append([0.0]*n)
          self.ypp.append([0.0]*n)
-         self.biases.append([0.0]*n)
-      for ib in range(len(biases)): 
-         for j in range(len(biases[ib])):
-            self.biases[ib][j] = biases[ib][j]
+            
       self.matsize = 0
+      self.bshift = []
       self.wshift = []
+      for layer in range(self.nlayers):
+         n = self.nodes[layer]
+         self.bshift.append(self.matsize)
+         self.matsize += n
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
@@ -52,20 +54,31 @@ class MyFeedForward(object):
    #
    def initial_w(self):
       w = []
+      for layer in range(self.nlayers):
+         n = self.nodes[layer]
+         w += [0.0000]*n
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
-         print "layer,n,m=",layer,n,m
          ww = np9.random.normal(0.0,pow(m,-0.5),(m,n))
          w += [ww[i,j] for j in range(n) for i in range(m)]
       return w
 
    def print_w(self,w):
+      for layer in range(self.nlayers):
+         n = self.nodes[layer]
+         bshift = self.bshift[layer]
+         print "b layer,n=",layer,n
+         str = ""
+         for i in range(n):
+            str += "%f " % w[bshift+i]
+         str += "\n"
+         print str
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
          shift = self.wshift[layer]
-         print "layer,n,m=",layer,n,m
+         print "w layer,n,m=",layer,n,m
          str = ""
          for i in range(m):
             for j in range(n):
@@ -102,14 +115,16 @@ class MyFeedForward(object):
    def evaluate(self,xin,w):
       for i in range(self.nodes[0]): 
          self.x[0][i] = xin[i]
-         self.y[0][i] = self.f[0](xin[i]+self.biases[0][i])
+         #self.y[0][i] = self.f[0](xin[i]+self.biases[0][i])
+         self.y[0][i] = self.f[0](xin[i]+w[i])
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
-         shift = self.wshift[layer]
+         shift  = self.wshift[layer]
+         bshift = self.bshift[layer+1]
          self.x[layer+1] = self.__matmul(m,1,n,w[shift:shift+m*n],self.y[layer])
          for i in range(m): 
-            self.y[layer+1][i] = self.f[layer+1](self.x[layer+1][i]+self.biases[layer+1][i])
+            self.y[layer+1][i] = self.f[layer+1](self.x[layer+1][i]+w[bshift+i])
 
       return self.y[self.nlayers-1][:]
 
@@ -123,8 +138,9 @@ class MyFeedForward(object):
       # define yp
       for layer in range(self.nlayers):
          n = self.nodes[layer]
+         bshift = self.bshift[layer]
          for k in range(n):
-            self.yp[layer][k] = self.fp[layer](self.x[layer][k]+self.biases[layer][k])
+            self.yp[layer][k] = self.fp[layer](self.x[layer][k]+w[bshift+k])
 
       #...calculate dydx
       nlayers = self.nlayers
@@ -155,15 +171,18 @@ class MyFeedForward(object):
          de =  2.0*(yout[i]-ytrain[i])
 
          layer = self.nlayers - 1
-         tmp0 = de*self.fp[layer](self.x[layer][i]+self.biases[layer][i])
+         bshift = self.bshift[layer]
+         tmp0 = de*self.fp[layer](self.x[layer][i]+w[bshift+i])
+         dErrordw[bshift+i] += tmp0
          for layer in range(self.nlayers-2,-1,-1):
             n = self.nodes[layer]
             m = self.nodes[layer+1]
-            shift = self.wshift[layer]
+            shift  = self.wshift[layer]
+            bshift = self.bshift[layer]
             ww = w[shift:shift+m*n]
             for k in range(n):
                for j in range(m):
-                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k]+self.biases[layer][k])
+                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k]+w[bshift+k])
 
             if (layer==self.nlayers-2):
                for k in range(n):
@@ -172,11 +191,16 @@ class MyFeedForward(object):
                for j in range(n):
                   xx = tmp0*ww[i+j*m]
                   tmp1.append(xx)
+                  dErrordw[bshift+j] += xx
             else:
                for k in range(n):
                   for j in range(m):
                      dErrordw[shift+j+k*m] += tmp1[j]*self.y[layer][k]
                tmp1 = self.__matmul(1,n,m,tmp1,ww)
+               #print "size tmp1=",len(tmp1),layer,n,m
+               for j in range(n):
+                  xx = tmp1[j]
+                  dErrordw[bshift+j] += xx
             
       return (Error,dErrordw)
 
@@ -195,10 +219,11 @@ class MyFeedForward(object):
       dypdw = []
       for layer in range(self.nlayers):
          n = self.nodes[layer]
+         bshift = self.bshift[layer]
          dxdw.append([0.0]*n)
          dypdw.append([0.0]*n)
          for k in range(n):
-            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+self.biases[layer][k])
+            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+w[bshift+k])
 
       #print "dyp2/dw1=",self.ypp[2][0]*self.y[1][0]
       #print "dyp1/dw1=",0.0
@@ -313,15 +338,17 @@ class MyFeedForward(object):
          shifti = self.matsize*i
          de =  1.0
          layer = self.nlayers - 1
-         tmp0 = de*self.fp[layer](self.x[layer][i]+self.biases[layer][i])
+         bshift = self.bshift[layer]
+         tmp0 = de*self.fp[layer](self.x[layer][i]+w[bshift+i])
          for layer in range(self.nlayers-2,-1,-1):
             n = self.nodes[layer]
             m = self.nodes[layer+1]
             shift = self.wshift[layer]
+            bshift = self.bshift[layer]
             ww = w[shift:shift+m*n]
             for k in range(n):
                for j in range(m):
-                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k]+self.biases[layer][k])
+                  ww[j+k*m] *=  self.fp[layer](self.x[layer][k]+w[bshift+k])
 
             if (layer==self.nlayers-2):
                for k in range(n):
@@ -353,10 +380,11 @@ class MyFeedForward(object):
       dypdw = []
       for layer in range(self.nlayers):
          n = self.nodes[layer]
+         bshift = self.bshift[layer]
          dxdw.append([0.0]*n)
          dypdw.append([0.0]*n)
          for k in range(n):
-            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+self.biases[layer][k])
+            self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+w[bshift+k])
 
       
       for layer in range(self.nlayers-1):
@@ -448,6 +476,64 @@ class MyFeedForward(object):
       
 
 
+
+
+alpha0 = 0.01
+alpha = 0.0001
+beta1 = 0.9
+beta2 = 0.999
+eps   = 1e-8
+
+beta = 2.0
+#sigmoid   = lambda x: 1.0/(1.0+math.exp(-x))
+#sigmoidp  = lambda x: math.exp(-x)/(1.0+math.exp(-x))**2
+#sigmoidpp = lambda x: math.exp(-x)*(math.exp(-x)-1.0)/(1.0+math.exp(-x))**3
+ap = 1.0
+xp = 4.5
+bp = 3.0
+penalty  = lambda x: ap*(0.5*(math.tanh(bp*(x-xp)) - math.tanh(bp*(x+xp))) + 1.0)
+penaltyp = lambda x: ap*0.5*bp*( (1/math.cosh(bp*(x-xp)))**2 - (1.0/math.cosh(bp*(x+xp)))**2)
+
+sigmoid      = lambda x: 0.5*(math.tanh(beta*x)+1.0)
+sigmoidp     = lambda x: 0.5*beta*(1.0/math.cosh(beta*x))**2
+sigmoidpp    = lambda x: 0.5*(-2.0)*beta*beta*math.tanh(beta*x)*(1.0/math.sech(beta*x))**2
+xmoid1   = lambda x: x
+xmoidp1  = lambda x: 1.0
+xmoidpp1 = lambda x: 0.0
+
+#bias = [[0.01],[0.01],[0.001],[0.0001],[0.00001],[0.0000001]]
+machine = MyFeedForward([3,2,3,2],[xmoid1,sigmoid,sigmoid,xmoid1],[xmoidp1,sigmoidp,sigmoidp,xmoidp1],[xmoidpp1,sigmoidpp,sigmoidpp,xmoidpp1])
+
+weights = machine.initial_w()
+nw = len(weights)
+
+xs = -0.567
+ys =  0.67
+zs =  -0.17
+es = 0.73839
+ws = 0.03839
+gg = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
+error = gg[0]
+g1    = gg[1]
+print "error=",error
+
+es1 = machine.evaluate([xs,ys,zs],weights)
+print "es1=",es1
+print "xs,ys,zs,es,es1=",xs,ys,zs,es,ws,es1,(es-es1[0])**2 + (ws-es1[1])**2
+print "len(g1)=",len(g1), 7+2+6+3
+print "gb=",g1[:7]
+print "gw=",g1[7:]
+
+gg0 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
+
+delta = 0.00001
+for ii in range(len(g1)):
+   weights[ii] += delta
+   gg1 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
+   weights[ii] -= 2*delta
+   gg2 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
+
+   print "gradient=",ii,weights[ii],(gg1[0]-gg2[0])/(2*delta),gg0[1][ii]
 
 #octave:16> a
 #a =
