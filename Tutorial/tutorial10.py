@@ -163,8 +163,38 @@ def plot_pathdiff(plot,y0,machine,weights,xdata):
 
 def main():
 #
+   import sys
+   import getopt
+
+   usage = \
+   """
+   esmiles to nn program
+
+   Usage: tutorial10 -n "hidden layers"
+
+   hidden_layers = "2 1"
+
+   -h prints this message
+
+   """
+
+   print("\ntutorial10 Arrows version")
 
    hidden_layers = [2,1]
+
+   opts, args = getopt.getopt(sys.argv[1:], "hn:")
+   for o, a in opts:
+      if '-n' in o:
+         hidden_layers = [eval(x) for x in a.strip().split()]
+      if o in ("-h","--help"):
+         print(usage)
+         exit()
+
+   weights_filename = "tutorial10"
+   for ix in hidden_layers:
+      weights_filename += "-"+str(ix) 
+   weights_filename += ".weights"
+
 
    ##### Read in fei file lazilly and do a simple print out of the data ####
    nframes = 0
@@ -188,6 +218,23 @@ def main():
 
    ninput   = len(xinputs[0])
    nframes0 = 0
+
+   print()
+   print("Training Data:")
+   print("ninput=",ninput)
+   print("nframes=",nframes)
+
+   print()
+   print("ReScaling Energies Parameters:")
+   print("emin=",emin)
+   print("emax=",emax)
+   print("emid=",emid)
+   print("edif=",edif)
+
+   scaled_energies = [0.0]*nframes
+   for i in range(nframes):
+      scaled_energies[i] = (energies[i]-emin)/(2*edif)
+    
 
 
    #beta = 2.0
@@ -216,21 +263,11 @@ def main():
    #bias = [[0.01],[0.01],[0.001]]
    #bias = []
 
-   ### define the network topology ###
-   #if os.path.isfile("tutorial10c.topology"):
-   #   print("reading network topology")
-   #   with open("tutorial10c.toplogy",'rb') as ff:
-   #      network = pickle.loads(ff.read())
-   #else:
-   #   print("creating network topology")
-   #   network = [[ninput,2*ninput,ninput,1],[xmoid1,relu,relu,xmoid1],[xmoidp1,relup,relup,xmoidp1],[xmoidpp1,relupp,relupp,xmoidpp1]]
-   #   with open("tutorial10c.toplogy",'wb') as ff:
-   #      ff.write(pickle.dumps(network))
-
-
    ### check/create network topology ###
+   print()
    print("creating network topology - ninput x hidden_layers x 1")
    print("                          - hidden_layers = ( ninput *",hidden_layers,")")
+   print()
 
    ### define the network topology ###
    ntwrk0 = [ninput]
@@ -252,16 +289,10 @@ def main():
 
    machine = myfeedforward.MyFeedForward(ntwrk0,ntwrkf,ntwrkp,ntwrkpp)
 
-   print("ninput=",ninput)
-   print("emin=",emin)
-   print("emax=",emax)
-   print("emid=",emid)
-   print("edif=",edif)
-
-
-   if os.path.isfile("tutorial10c.weights"):
+   print("Weights_filename:", weights_filename)
+   if os.path.isfile(weights_filename):
       print("reading weights")
-      with open("tutorial10c.weights",'rb') as ff:
+      with open(weights_filename,'rb') as ff:
          weights = pickle.loads(ff.read())
    else:
       print("creating initial weights")
@@ -272,22 +303,23 @@ def main():
    nw = len(weights)
    print("nw=",nw)
 
-   print("nframes=",nframes)
 
    nepoch = 100
    nbatch = 25
+   print()
+   print("Minimization Parameters:")
    print("nepoch =",nepoch)
    print("nbatch =",nbatch)
 
 
    ###plot the relative energies using Turtle graphics###
    plot  = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Energies Plot",2)
-   iydiff = plot_pathenergy(plot,energies[nframes0:],machine,weights,xinputs[nframes0:])
+   iydiff = plot_pathenergy(plot,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
    id_min = ids[iydiff[0][0]]
    id_max = ids[iydiff[1][0]]
    print("iydiff=",iydiff," idmin=",id_min, " idmax=",id_max)
    plot2 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Diff Energies Plot",2)
-   yminmax = plot_pathdiff(plot2,energies[nframes0:],machine,weights,xinputs[nframes0:])
+   yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
 
    enter0 = input(" -- start simulation --- ")
 
@@ -308,7 +340,7 @@ def main():
    
       for i in range(nframes):
          batch += 1
-         gg = machine.w_energy_gradient(xinputs[i],[energies[i]],weights)
+         gg = machine.w_energy_gradient(xinputs[i],[scaled_energies[i]],weights)
          error = gg[0]
          g1    = gg[1]
 
@@ -335,11 +367,11 @@ def main():
             batch = 0
             for j in range(nw): gsum[j] = 0.0
 
-      ### plot the relative energies using turtle graphicsl ###
-      iydiff = plot_pathenergy(plot,energies[nframes0:],machine,weights,xinputs[nframes0:])
+      ### plot the relative scaled_energies using turtle graphicsl ###
+      iydiff = plot_pathenergy(plot,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
       id_min = ids[iydiff[0][0]]
       id_max = ids[iydiff[1][0]]
-      yminmax = plot_pathdiff(plot2,energies[nframes0:],machine,weights,xinputs[nframes0:])
+      yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
 
       ### print out update ###
       msg  = "epoch=%5d nframes=%5d nbatch=%3d " % (epoch+1,nframes,nbatch)
@@ -349,7 +381,7 @@ def main():
       print(msg)
 
       ### writeout weights ###
-      with open("tutorial10c.weights",'wb') as ff:
+      with open(weights_filename,'wb') as ff:
          ff.write(pickle.dumps(weights))
 
    ### end for epoch ###
@@ -359,7 +391,7 @@ def main():
    x = input("--Press return to finish--")
 
    ### writeout weights ###
-   with open("tutorial10c.weights",'wb') as ff:
+   with open(weights_filename,'wb') as ff:
       ff.write(pickle.dumps(weights))
 
    return
