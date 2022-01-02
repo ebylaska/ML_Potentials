@@ -68,23 +68,23 @@ class MyFeedForward(object):
       for layer in range(self.nlayers):
          n = self.nodes[layer]
          bshift = self.bshift[layer]
-         print "b layer,n=",layer,n
+         print("b layer,n=",layer,n)
          str = ""
          for i in range(n):
             str += "%f " % w[bshift+i]
          str += "\n"
-         print str
+         print(str)
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
          shift = self.wshift[layer]
-         print "w layer,n,m=",layer,n,m
+         print("w layer,n,m=",layer,n,m)
          str = ""
          for i in range(m):
             for j in range(n):
                str += "%f " % w[shift+i+j*m]
             str += "\n"
-         print str
+         print(str)
 
    #
    # local matrix multiply function
@@ -197,7 +197,7 @@ class MyFeedForward(object):
                   for j in range(m):
                      dErrordw[shift+j+k*m] += tmp1[j]*self.y[layer][k]
                tmp1 = self.__matmul(1,n,m,tmp1,ww)
-               #print "size tmp1=",len(tmp1),layer,n,m
+               #print("size tmp1=",len(tmp1),layer,n,m)
                for j in range(n):
                   xx = tmp1[j]
                   dErrordw[bshift+j] += xx
@@ -225,21 +225,21 @@ class MyFeedForward(object):
          for k in range(n):
             self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+w[bshift+k])
 
-      #print "dyp2/dw1=",self.ypp[2][0]*self.y[1][0]
-      #print "dyp1/dw1=",0.0
-      #print "dyp2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]
-      #print "dyp1/dw0=",self.ypp[1][0]*self.y[0][0]
+      #print("dyp2/dw1=",self.ypp[2][0]*self.y[1][0])
+      #print("dyp1/dw1=",0.0)
+      #print("dyp2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0])
+      #print("dyp1/dw0=",self.ypp[1][0]*self.y[0][0])
 
-      #print "dError/dw0=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0]+self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0])
-      #print "dError/dw1=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*self.y[1][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0])
+      #print("dError/dw0=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0]+self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0]))
+      #print("dError/dw1=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*self.y[1][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0]))
 
-      #print "dg2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] 
-      #print "dg1/dw0=",self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0]
-      #print "dg0/dw0=",self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0]
+      #print("dg2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] )
+      #print("dg1/dw0=",self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0])
+      #print("dg0/dw0=",self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0])
 
-      #print "dg1/dw1=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0]
-      #print "dg0/dw1=",self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0]
-      #print
+      #print("dg1/dw1=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0])
+      #print("dg0/dw1=",self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0])
+      #prin()
       
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
@@ -323,7 +323,7 @@ class MyFeedForward(object):
                for k in range(len(dydxij)):
                   de = 2.0*(dyoutdx[k]-dytraindx[k])
                   dErrordw[shift+i+j*m] += de*dydxij[k]
-               #print "layer,shift,i,j,shift+i+j*m,dErrordw=",layer,shift,i,j,shift+i+j*m,dErrordw
+               #print("layer,shift,i,j,shift+i+j*m,dErrordw=",layer,shift,i,j,shift+i+j*m,dErrordw)
                
 
       return (Error,dErrordw)
@@ -476,64 +476,64 @@ class MyFeedForward(object):
       
 
 
+def main():
+#
+   alpha0 = 0.01
+   alpha = 0.0001
+   beta1 = 0.9
+   beta2 = 0.999
+   eps   = 1e-8
 
+   beta = 2.0
+   #sigmoid   = lambda x: 1.0/(1.0+math.exp(-x))
+   #sigmoidp  = lambda x: math.exp(-x)/(1.0+math.exp(-x))**2
+   #sigmoidpp = lambda x: math.exp(-x)*(math.exp(-x)-1.0)/(1.0+math.exp(-x))**3
+   ap = 1.0
+   xp = 4.5
+   bp = 3.0
+   penalty  = lambda x: ap*(0.5*(math.tanh(bp*(x-xp)) - math.tanh(bp*(x+xp))) + 1.0)
+   penaltyp = lambda x: ap*0.5*bp*( (1/math.cosh(bp*(x-xp)))**2 - (1.0/math.cosh(bp*(x+xp)))**2)
 
-alpha0 = 0.01
-alpha = 0.0001
-beta1 = 0.9
-beta2 = 0.999
-eps   = 1e-8
+   sigmoid      = lambda x: 0.5*(math.tanh(beta*x)+1.0)
+   sigmoidp     = lambda x: 0.5*beta*(1.0/math.cosh(beta*x))**2
+   sigmoidpp    = lambda x: 0.5*(-2.0)*beta*beta*math.tanh(beta*x)*(1.0/math.sech(beta*x))**2
+   xmoid1   = lambda x: x
+   xmoidp1  = lambda x: 1.0
+   xmoidpp1 = lambda x: 0.0
 
-beta = 2.0
-#sigmoid   = lambda x: 1.0/(1.0+math.exp(-x))
-#sigmoidp  = lambda x: math.exp(-x)/(1.0+math.exp(-x))**2
-#sigmoidpp = lambda x: math.exp(-x)*(math.exp(-x)-1.0)/(1.0+math.exp(-x))**3
-ap = 1.0
-xp = 4.5
-bp = 3.0
-penalty  = lambda x: ap*(0.5*(math.tanh(bp*(x-xp)) - math.tanh(bp*(x+xp))) + 1.0)
-penaltyp = lambda x: ap*0.5*bp*( (1/math.cosh(bp*(x-xp)))**2 - (1.0/math.cosh(bp*(x+xp)))**2)
+   #bias = [[0.01],[0.01],[0.001],[0.0001],[0.00001],[0.0000001]]
+   machine = MyFeedForward([3,2,3,2],[xmoid1,sigmoid,sigmoid,xmoid1],[xmoidp1,sigmoidp,sigmoidp,xmoidp1],[xmoidpp1,sigmoidpp,sigmoidpp,xmoidpp1])
 
-sigmoid      = lambda x: 0.5*(math.tanh(beta*x)+1.0)
-sigmoidp     = lambda x: 0.5*beta*(1.0/math.cosh(beta*x))**2
-sigmoidpp    = lambda x: 0.5*(-2.0)*beta*beta*math.tanh(beta*x)*(1.0/math.sech(beta*x))**2
-xmoid1   = lambda x: x
-xmoidp1  = lambda x: 1.0
-xmoidpp1 = lambda x: 0.0
+   weights = machine.initial_w()
+   nw = len(weights)
 
-#bias = [[0.01],[0.01],[0.001],[0.0001],[0.00001],[0.0000001]]
-machine = MyFeedForward([3,2,3,2],[xmoid1,sigmoid,sigmoid,xmoid1],[xmoidp1,sigmoidp,sigmoidp,xmoidp1],[xmoidpp1,sigmoidpp,sigmoidpp,xmoidpp1])
+   xs = -0.567
+   ys =  0.67
+   zs =  -0.17
+   es = 0.73839
+   ws = 0.03839
+   gg = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
+   error = gg[0]
+   g1    = gg[1]
+   print("error=",error)
 
-weights = machine.initial_w()
-nw = len(weights)
+   es1 = machine.evaluate([xs,ys,zs],weights)
+   print("es1=",es1)
+   print("xs,ys,zs,es,es1=",xs,ys,zs,es,ws,es1,(es-es1[0])**2 + (ws-es1[1])**2)
+   print("len(g1)=",len(g1), 7+2+6+3)
+   print("gb=",g1[:7])
+   print("gw=",g1[7:])
 
-xs = -0.567
-ys =  0.67
-zs =  -0.17
-es = 0.73839
-ws = 0.03839
-gg = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
-error = gg[0]
-g1    = gg[1]
-print "error=",error
+   gg0 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
 
-es1 = machine.evaluate([xs,ys,zs],weights)
-print "es1=",es1
-print "xs,ys,zs,es,es1=",xs,ys,zs,es,ws,es1,(es-es1[0])**2 + (ws-es1[1])**2
-print "len(g1)=",len(g1), 7+2+6+3
-print "gb=",g1[:7]
-print "gw=",g1[7:]
+   delta = 0.00001
+   for ii in range(len(g1)):
+      weights[ii] += delta
+      gg1 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
+      weights[ii] -= 2*delta
+      gg2 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
 
-gg0 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
-
-delta = 0.00001
-for ii in range(len(g1)):
-   weights[ii] += delta
-   gg1 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
-   weights[ii] -= 2*delta
-   gg2 = machine.w_energy_gradient([xs,ys,zs],[es,ws],weights)
-
-   print "gradient=",ii,weights[ii],(gg1[0]-gg2[0])/(2*delta),gg0[1][ii]
+      print("gradient=",ii,weights[ii],(gg1[0]-gg2[0])/(2*delta),gg0[1][ii])
 
 #octave:16> a
 #a =
@@ -563,3 +563,6 @@ for ii in range(len(g1)):
 
 # v = [   0.533104, 0.067522, 0.422639, 0.228982]
 
+
+if __name__ == "__main__":
+   main()

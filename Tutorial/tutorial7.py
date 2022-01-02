@@ -12,7 +12,7 @@ import myfeedforward6 as myfeedforward
 #
 # To run 
 #
-#  python tutorial5.py
+#  python tutorial7.py
 #
 #
 # This code is assuming that your python is a python 2.7 and that you have the above libraries available on your system.  
@@ -29,13 +29,13 @@ import myfeedforward6 as myfeedforward
 #### going to read a URL ####
 #feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/ForJim/Position-Specific-Isotopes/1M/Pyruvate/AIMD/tequil-2018-3-2-12.fei"
 #feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/BES/Mackinawite/Cascade-hopper/udimer-fes.fei"
-#feifilename = "/Users/bylaska/Codes/ML_Potentials/CO2/perm2/co2.fei"
 #feifilename = "https://arrows.emsl.pnnl.gov/api/eric_view/raw=we31869:/media/Seagate2/Projects/ForRaymond/perm/co2-2019-30-19-12.fei"
 
 #feifilename = "https://bitbucket.org/ebylaska/ml_potentials/raw/7afb9bece4d7a8f2a0a500970a0dea639cc75f47/ML_Potentials/CO2/perm2/co2.fei"
 
 
-feifilename = "co2.fei"
+feifilename = "/Users/bylaska/Codes/ML_Potentials/CO2/perm2/co2.fei"
+#feifilename = "co2.fei"
 
 
 
@@ -287,7 +287,8 @@ for i in range(nframes):
    dist2[i] = (2*dist2[i] - (d2max+d2min))/(d2max-d2min)
    dist3[i] = (2*dist3[i] - (d3max+d3min))/(d3max-d3min)
 
-nframes0 = nframes-500
+nframes0 = nframes-701
+nframes0 = 0
 
 
 alpha0 = 0.01
@@ -306,20 +307,27 @@ bp = 3.0
 penalty  = lambda x: ap*(0.5*(math.tanh(bp*(x-xp)) - math.tanh(bp*(x+xp))) + 1.0)
 penaltyp = lambda x: ap*0.5*bp*( (1/math.cosh(bp*(x-xp)))**2 - (1.0/math.cosh(bp*(x+xp)))**2)
 
-sigmoid      = lambda x: 0.5*(math.tanh(beta*x)+1.0)
-sigmoidp     = lambda x: 0.5*beta*(1.0/math.cosh(beta*x))**2
-sigmoidpp    = lambda x: 0.5*(-2.0)*beta*beta*math.tanh(beta*x)*(1.0/math.sech(beta*x))**2
-xmoid1   = lambda x: x
-xmoidp1  = lambda x: 1.0
-xmoidpp1 = lambda x: 0.0
+
+sigmoid   = lambda x: 0.5*(math.tanh(beta*x)+1.0)
+sigmoidp  = lambda x: 0.5*beta*(1.0/math.cosh(beta*x))**2
+sigmoidpp = lambda x: 0.5*(-2.0)*beta*beta*math.tanh(beta*x)*(1.0/math.sech(beta*x))**2
+
+xmoid1    = lambda x: x
+xmoidp1   = lambda x: 1.0
+xmoidpp1  = lambda x: 0.0
+
+relu      = lambda x: max(0.0,x)
+relup     = lambda x: 0.0 if (x<=0.0) else 1.0
+relupp    = lambda x: 0.0
 
 #bias = [[0.01],[0.01],[0.001],[0.0001],[0.00001],[0.0000001]]
 bias = [[0.01],[0.01],[0.001]]
 bias = []
-machine = myfeedforward.MyFeedForward([3,60,120,1],[xmoid1,sigmoid,sigmoid,xmoid1],[xmoidp1,sigmoidp,sigmoidp,xmoidp1],[xmoidpp1,sigmoidpp,sigmoidpp,xmoidpp1])
+#machine = myfeedforward.MyFeedForward([3,60,120,1],[xmoid1,sigmoid,sigmoid,xmoid1],[xmoidp1,sigmoidp,sigmoidp,xmoidp1],[xmoidpp1,sigmoidpp,sigmoidpp,xmoidpp1])
+machine = myfeedforward.MyFeedForward([3,60,120,1],[xmoid1,relu,relu,xmoid1],[xmoidp1,relup,relup,xmoidp1],[xmoidpp1,relupp,relupp,xmoidpp1])
 
-if os.path.isfile("tutorial6.weights"):
-   with open("tutorial6.weights",'rb') as ff:
+if os.path.isfile("tutorial7.weights"):
+   with open("tutorial7.weights",'rb') as ff:
       weights = pickle.loads(ff.read())
 else:
    weights = machine.initial_w()
@@ -351,7 +359,7 @@ for i in range(1000000):
    xs = dist1[ii]
    ys = dist2[ii]
    us = dist3[ii]
-   ii = ((ii+1)%nframes0)
+   ii = ((ii+1)%nframes)
    
    gg = machine.w_energy_gradient([xs,ys,us],[es],weights)
    error0 = error
@@ -371,12 +379,12 @@ for i in range(1000000):
       v[j] = beta2*v[j] + (1.0-beta2)*g1[j]*g1[j]
       weights[j] -= alphat*m[j]/(math.sqrt(v[j]) + eps)
 
-   if ((i%20000)==0):
+   if ((i%200)==0):
       es1 = machine.evaluate([xs,ys,us],weights)[0]
       print("%10d %10.3f %10.3f %10.3f %10.3f %10.3f  ||  %12.6f" % (i,xs,ys,us,es,es1,error))
       plot_pathenergy(plot,energies[nframes0:],machine,weights,dist1[nframes0:],dist2[nframes0:],dist3[nframes0:])
 
-      with open("tutorial6.weights",'wb') as ff:
+      with open("tutorial7.weights",'wb') as ff:
          ff.write(pickle.dumps(weights))
 
 ###plot the relative energies using html ###
@@ -385,6 +393,6 @@ for i in range(1000000):
 x = input("--Press return to finish--")
 print("yeh - writing weeights")
 
-with open("tutorial6.weights",'wb') as ff:
+with open("tutorial7.weights",'wb') as ff:
    ff.write(pickle.dumps(weights))
 

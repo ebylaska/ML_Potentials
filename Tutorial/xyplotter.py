@@ -12,12 +12,14 @@ def _fillsquare(t,x1,y1,x2,y2):
    t.goto(x1,y1)
    t.color("black","white")
    t.pendown()
-   t.fill(True)
+   #t.fill(True)
+   t.begin_fill()
    t.goto(x1,y2)
    t.goto(x2,y2)
    t.goto(x2,y1)
    t.goto(x1,y1)
-   t.fill(False)
+   #t.fill(False)
+   t.end_fill()
 
    t.penup()
    t.goto(x1, y1+0.25*(y2-y1))
@@ -183,13 +185,14 @@ class xyplotter:
          self.root.title("xyplotter")
       else:
          self.root.title(title)
+      #self.cv1  = turtle.TK.Canvas(self.root,width=750,height=600,bg="#ddffff")
       self.cv1  = turtle.TK.Canvas(self.root,width=500,height=400,bg="#ddffff")
       self.cv1.pack()
       self.s1 = turtle.TurtleScreen(self.cv1)
       self.s1.setworldcoordinates(xmin-dx,ymin-dy,xmax+dx,ymax+dy)
       self.t1 = turtle.RawTurtle(self.s1)
       self.t1.speed("fastest")
-      self.t1.tracer(10000)
+      self.t1.screen.tracer(10000)
       self.t1.hideturtle()
       self.t1.pensize(1)
       self.t1.color("black")
@@ -215,7 +218,7 @@ class xyplotter:
       self.s1.setworldcoordinates(xmin-dx,ymin-dy,xmax+dx,ymax+dy)
       self.t1 = turtle.RawTurtle(self.s1)
       self.t1.speed("fastest")
-      self.t1.tracer(10000)
+      self.t1.screen.tracer(10000)
       self.t1.hideturtle()
       self.t1.pensize(1)
       self.t1.color("black")
@@ -232,7 +235,7 @@ class xyplotter:
       self.s1.update()
 
    def reset(self):
-      self.t1.tracer(0)
+      self.t1.screen.tracer(0)
       self.t1.hideturtle()
       _fillsquare(self.t1,self.xmin,self.ymin,self.xmax,self.ymax)
       self.s1.update()
@@ -244,7 +247,7 @@ class xyplotter:
             self.t1.color("black")
          else:
             self.t1.color(color)
-         self.t1.tracer(10000)
+         self.t1.screen.tracer(10000)
          self.t1.hideturtle()
          self.t1.penup()
          self.t1.goto(x[0],y[0])
@@ -260,7 +263,7 @@ class xyplotter:
             self.t1.color("black")
          else:
             self.t1.color(color)
-         self.t1.tracer(10000)
+         self.t1.screen.tracer(10000)
          self.t1.hideturtle()
          self.t1.penup()
          x = 0.0
@@ -278,7 +281,7 @@ class xyplotter:
             ctmp = "black"
          else:
             ctmp = color
-         self.t1.tracer(10000)
+         self.t1.screen.tracer(10000)
          self.t1.hideturtle()
          self.t1.penup()
          for i in range(n):
@@ -295,7 +298,7 @@ class xyplotter:
             ctmp = "black"
          else:
             ctmp = color
-         self.t1.tracer(10000)
+         self.t1.screen.tracer(10000)
          self.t1.hideturtle()
          self.t1.penup()
          for i in range(0,n):
@@ -313,7 +316,7 @@ class xyplotter:
       else:              ctmp2 = color2
 
       self.t1.speed("fastest")
-      self.t1.tracer(0)
+      self.t1.screen.tracer(0)
       self.t1.hideturtle()
       _fillsquare(self.t1,self.xmin,self.ymin,self.xmax,self.ymax)
       if (n1>0):
@@ -336,7 +339,7 @@ class xyplotter:
       else:              ctmp2 = color2
 
       #self.t1.speed("fastest")
-      #self.t1.tracer(10000)
+      self.t1.screen.tracer(10000)
       #self.t1.hideturtle()
       
       if (n1>0):
