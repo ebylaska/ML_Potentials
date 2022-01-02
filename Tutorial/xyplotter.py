@@ -56,8 +56,8 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
    if (ltype==None): ltype=1
    if (ltype==2):
       xname = "Path"
-      yname = "Relative Energy"
-      yname2 = "kcal/mol"
+      yname = "Scaled Energies:E,Exact"
+      yname2 = "dimensionless"
       xf  = "%.2f"
       yf  = "%.2f"
       dxf = 0.40
@@ -78,7 +78,7 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
          t.write("%s" % (yname2[i]), font=fnt)
    elif (ltype==3):
       xname = "Path"
-      yname = "Residual Error a.u."
+      yname = "Scaled Energies:E-Eexact"
       xf  = "%.2f"
       yf  = "%.6f"
       dxf = 0.60

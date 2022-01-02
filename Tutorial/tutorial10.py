@@ -170,7 +170,7 @@ def main():
    """
    esmiles to nn program
 
-   Usage: tutorial10 -n "hidden layers"
+   Usage: tutorial10 -n "hidden layers -b nbatch -p nepoch"
 
    hidden_layers = "2 1"
 
@@ -181,11 +181,17 @@ def main():
    print("\ntutorial10 Arrows version")
 
    hidden_layers = [2,1]
+   nbatch = 25
+   nepoch = 100
 
-   opts, args = getopt.getopt(sys.argv[1:], "hn:")
+   opts, args = getopt.getopt(sys.argv[1:], "hn:b:p:")
    for o, a in opts:
       if '-n' in o:
          hidden_layers = [eval(x) for x in a.strip().split()]
+      if '-b' in o:
+         nbatch = eval(a)
+      if '-p' in o:
+         nepoch = eval(a)
       if o in ("-h","--help"):
          print(usage)
          exit()
@@ -304,8 +310,6 @@ def main():
    print("nw=",nw)
 
 
-   nepoch = 100
-   nbatch = 25
    print()
    print("Minimization Parameters:")
    print("nepoch =",nepoch)
@@ -318,10 +322,13 @@ def main():
    id_min = ids[iydiff[0][0]]
    id_max = ids[iydiff[1][0]]
    print("iydiff=",iydiff," idmin=",id_min, " idmax=",id_max)
-   plot2 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Diff Energies Plot",2)
+   plot2 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Diff Energies Plot",3)
    yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
 
-   enter0 = input(" -- start simulation --- ")
+   #enter0 = input(" -- start simulation --- ")
+   print()
+   print(" --- start training ---")
+   print()
 
    alpha = 0.0001
    beta1 = 0.9
