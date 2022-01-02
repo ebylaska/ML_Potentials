@@ -174,7 +174,7 @@ def main():
    xinputs  = []
    ids      = []
    for (id,xdata,energy) in read_ml_urlfile(mlfilename):
-      print("nframes=",nframes)
+      #print("nframes=",nframes)
       xinputs.append(xdata)
       energies.append(energy)
       ids.append(id)
@@ -229,8 +229,8 @@ def main():
 
 
    ### check/create network topology ###
-   print("creating network topology - n x hidden_layers x 1")
-   print("                          - hidden_layers = ( nlayers *",hidden_layers,")")
+   print("creating network topology - ninput x hidden_layers x 1")
+   print("                          - hidden_layers = ( ninput *",hidden_layers,")")
 
    ### define the network topology ###
    ntwrk0 = [ninput]
