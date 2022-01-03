@@ -83,31 +83,26 @@ def read_ml_urlfile(urlfilename):
 #             plot_pathenergy                #
 #                                            #
 ##############################################
-def plot_pathenergy(plot,y0,machine,weights,xdata):
+def plot_pathenergy(plot,y0,y1):
    #colors = ("blue","green","yellow","purple","orange")
    #ncc    = len(colors)
-
    imax      = 0 
    y0_imax   = 0.0
    y_imax    = 0.0
    ydiff_max = 0.0
-
    imin      = 0 
    y0_imin   = 0.0
    y_imin    = 0.0
    ydiff_min = 99e99
-
    #delta = 0.1
    ymin = +999999.9
    ymax = -999999.9
-   y1 = []
-   for i in range(len(xdata)):
-      y = machine.evaluate(xdata[i],weights)[0]
+   for i in range(len(y1)):
+      y = y1[i]
       if (y>ymax): ymax = y
       if (y<ymin): ymin = y
       if (y0[i]>ymax): ymax = y0[i]
       if (y0[i]<ymin): ymin = y0[i]
-      y1.append(y)
 
       ydiff = abs(y - y0[i])
       if (ydiff>ydiff_max):
@@ -136,27 +131,38 @@ def plot_pathenergy(plot,y0,machine,weights,xdata):
 #             plot_pathdiff                  #
 #                                            #
 ##############################################
-def plot_pathdiff(plot,y0,machine,weights,xdata):
+def plot_pathdiff(plot,y0,y1):
    #colors = ("blue","green","yellow","purple","orange")
    #ncc    = len(colors)
-
    #delta = 0.1
    ymin = +999999.9
    ymax = -999999.9
-   y1 = []
-   for i in range(len(xdata)):
-      y = abs(machine.evaluate(xdata[i],weights)[0]-y0[i])
+   ydiff = []
+   for i in range(len(y1)):
+      y =  abs(y1[i]-y0[i])
       if (y>ymax): ymax = y
       if (y<ymin): ymin = y
-      y1.append(y)
+      ydiff.append(y)
 
    ### reset the plotting window and then plot data ###
    delta = 0.1*(ymax-ymin)
    plot.resetwindow(0.0,ymin,1.0,ymax+delta,"Scaled Delta Energies")
-   plot.plot1(y1,"green")
+   plot.plot1(ydiff,"green")
 
    return (ymin,ymax)
 
+
+##############################################
+#                                            #
+#             ytrain_generate                #
+#                                            #
+##############################################
+def ytrain_generate(machine,weights,xdata):
+   #
+   ytrain = []
+   for i in range(len(xdata)):
+      ytrain.append(machine.evaluate(xdata[i],weights)[0])
+   return ytrain
 
 
 ####################### main program ##############################
@@ -315,15 +321,19 @@ def main():
    print("nepoch =",nepoch)
    print("nbatch =",nbatch)
 
+   ### generate current ytrain ###
+   ytrain = ytrain_generate(machine,weights,xinputs)
 
    ###plot the relative energies using Turtle graphics###
    plot  = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Energies Plot",2)
-   iydiff = plot_pathenergy(plot,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
+   plot2 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Diff Energies Plot",3)
+
+   iydiff  = plot_pathenergy(plot,scaled_energies[nframes0:],ytrain[nframes0:])
+   yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],ytrain[nframes0:])
+
    id_min = ids[iydiff[0][0]]
    id_max = ids[iydiff[1][0]]
    print("iydiff=",iydiff," idmin=",id_min, " idmax=",id_max)
-   plot2 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Diff Energies Plot",3)
-   yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
 
    #enter0 = input(" -- start simulation --- ")
    print()
@@ -374,11 +384,15 @@ def main():
             batch = 0
             for j in range(nw): gsum[j] = 0.0
 
+      ### generate current ytrain ###
+      ytrain = ytrain_generate(machine,weights,xinputs)
+
       ### plot the relative scaled_energies using turtle graphicsl ###
-      iydiff = plot_pathenergy(plot,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
+      iydiff  = plot_pathenergy(plot,scaled_energies[nframes0:],ytrain[nframes0:])
+      yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],ytrain[nframes0:])
+
       id_min = ids[iydiff[0][0]]
       id_max = ids[iydiff[1][0]]
-      yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],machine,weights,xinputs[nframes0:])
 
       ### print out update ###
       msg  = "epoch=%5d nframes=%5d nbatch=%3d " % (epoch+1,nframes,nbatch)
