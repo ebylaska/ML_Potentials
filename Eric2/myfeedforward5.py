@@ -55,7 +55,7 @@ class MyFeedForward(object):
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
-         print "layer,n,m=",layer,n,m
+         print("layer,n,m=",layer,n,m)
          ww = np9.random.normal(0.0,pow(m,-0.5),(m,n))
          w += [ww[i,j] for j in range(n) for i in range(m)]
       return w
@@ -65,13 +65,13 @@ class MyFeedForward(object):
          n = self.nodes[layer]
          m = self.nodes[layer+1]
          shift = self.wshift[layer]
-         print "layer,n,m=",layer,n,m
+         print("layer,n,m=",layer,n,m)
          str = ""
          for i in range(m):
             for j in range(n):
                str += "%f " % w[shift+i+j*m]
             str += "\n"
-         print str
+         print(str)
 
    #
    # local matrix multiply function
@@ -200,21 +200,21 @@ class MyFeedForward(object):
          for k in range(n):
             self.ypp[layer][k] =  self.fpp[layer](self.x[layer][k]+self.biases[layer][k])
 
-      #print "dyp2/dw1=",self.ypp[2][0]*self.y[1][0]
-      #print "dyp1/dw1=",0.0
-      #print "dyp2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]
-      #print "dyp1/dw0=",self.ypp[1][0]*self.y[0][0]
+      #print("dyp2/dw1=",self.ypp[2][0]*self.y[1][0])
+      #print("dyp1/dw1=",0.0)
+      #print("dyp2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0])
+      #print("dyp1/dw0=",self.ypp[1][0]*self.y[0][0])
 
-      #print "dError/dw0=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0]+self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0])
-      #print "dError/dw1=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*self.y[1][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0])
+      #print("dError/dw0=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0]+self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0]))
+      #print("dError/dw1=",2.0*(dyoutdx[0]-dytraindx[0])*(self.ypp[2][0]*self.y[1][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] + self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0]))
 
-      #print "dg2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] 
-      #print "dg1/dw0=",self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0]
-      #print "dg0/dw0=",self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0]
+      #print("dg2/dw0=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0] )
+      #print("dg1/dw0=",self.yp[2][0]*w[1]*self.ypp[1][0]*self.y[0][0]*w[0]*self.yp[0][0])
+      #print("dg0/dw0=",self.yp[2][0]*w[1]*self.yp[1][0]*self.yp[0][0])
 
-      #print "dg1/dw1=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0]
-      #print "dg0/dw1=",self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0]
-      #print
+      #print("dg1/dw1=",self.ypp[2][0]*w[1]*self.yp[1][0]*self.y[0][0]*w[1]*self.yp[1][0]*w[0]*self.yp[0][0])
+      #print("dg0/dw1=",self.yp[2][0]*self.yp[1][0]*w[0]*self.yp[0][0])
+      #prin()
       
       for layer in range(self.nlayers-1):
          n = self.nodes[layer]
@@ -298,7 +298,7 @@ class MyFeedForward(object):
                for k in range(len(dydxij)):
                   de = 2.0*(dyoutdx[k]-dytraindx[k])
                   dErrordw[shift+i+j*m] += de*dydxij[k]
-               #print "layer,shift,i,j,shift+i+j*m,dErrordw=",layer,shift,i,j,shift+i+j*m,dErrordw
+               #print("layer,shift,i,j,shift+i+j*m,dErrordw=",layer,shift,i,j,shift+i+j*m,dErrordw)
                
 
       return (Error,dErrordw)

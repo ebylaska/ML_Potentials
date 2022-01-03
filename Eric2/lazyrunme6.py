@@ -6,7 +6,9 @@ import fastatomfm3 as atomfm
 #xyzfilename = "../eatomstructure.xyz"
 #feifilename = "../Eric/h2-aimd.fei"
 #feifilename = "tequil-2018-3-2-12.fei"
-feifilename = "../Eric/tequil-2018-3-9-8.fei"
+#feifilename = "../Eric/tequil-2018-3-9-8.fei"
+
+feifilename = "../CO2/perm2/co2.fei"
 parametersfilename = "../Eric/parameters"
 
 
@@ -37,7 +39,7 @@ def read_fei_file(filename):
       xyzdata = ff.readline()
    nion = int(xyzdata.split('\n')[0])
    nlines = nion+5
-   #print("NION=",nion)
+   print("NION=",nion)
 
    with open(filename,'r') as fp:
       while True:
