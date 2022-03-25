@@ -55,8 +55,8 @@ def _fillsquare(t,x1,y1,x2,y2):
 def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
    if (ltype==None): ltype=1
    if (ltype==2):
-      xname = "Path"
-      yname = "Scaled Energies:E,Exact"
+      xname = "Scaled Records"
+      yname = "Scaled Energy"
       yname2 = "dimensionless"
       xf  = "%.2f"
       yf  = "%.2f"
@@ -77,8 +77,8 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
          t.pendown()
          t.write("%s" % (yname2[i]), font=fnt)
    elif (ltype==3):
-      xname = "Path"
-      yname = "Scaled Energies:E-Eexact"
+      xname = "Scaled Records"
+      yname = "Difference Energy"
       xf  = "%.2f"
       yf  = "%.6f"
       dxf = 0.60
@@ -98,6 +98,54 @@ def _labels(t,x1,y1,x2,y2,dx,dy,ltype=None):
       xf  = "%.2f"
       yf  = "%.6f"
       dxf = 0.60
+      fnt = ('Arial', 12, 'normal')
+      t.penup()
+      t.goto(0.5*(x1+x2)-0.1*dx,y1-0.90*dy)
+      t.pendown()
+      t.write("%s" % (xname), font=fnt)
+      for i in range(len(yname)):
+         t.penup()
+         t.goto(x1-0.80*dx,y2-(2.70+i*0.31)*dy)
+         t.pendown()
+         t.write("%s" % (yname[i]), font=fnt)
+   elif (ltype==5):
+      xname = "Scaled Exp. Energy"
+      yname = "Scaled Pred. Energy"
+      xf  = "%.2f"
+      yf  = "%.2f"
+      dxf = 0.40
+      fnt = ('Arial', 12, 'normal')
+      t.penup()
+      t.goto(0.5*(x1+x2)-0.1*dx,y1-0.90*dy)
+      t.pendown()
+      t.write("%s" % (xname), font=fnt)
+      for i in range(len(yname)):
+         t.penup()
+         t.goto(x1-0.80*dx,y2-(2.70+i*0.31)*dy)
+         t.pendown()
+         t.write("%s" % (yname[i]), font=fnt)
+   elif (ltype==6):
+      xname = "Scaled Records"
+      yname = "Scaled Exp. Energy"
+      xf  = "%.2f"
+      yf  = "%.2f"
+      dxf = 0.40
+      fnt = ('Arial', 12, 'normal')
+      t.penup()
+      t.goto(0.5*(x1+x2)-0.1*dx,y1-0.90*dy)
+      t.pendown()
+      t.write("%s" % (xname), font=fnt)
+      for i in range(len(yname)):
+         t.penup()
+         t.goto(x1-0.80*dx,y2-(2.70+i*0.31)*dy)
+         t.pendown()
+         t.write("%s" % (yname[i]), font=fnt)
+   elif (ltype==7):
+      xname = "Scaled Records"
+      yname = "Scaled Pred. Energy"
+      xf  = "%.2f"
+      yf  = "%.2f"
+      dxf = 0.40
       fnt = ('Arial', 12, 'normal')
       t.penup()
       t.goto(0.5*(x1+x2)-0.1*dx,y1-0.90*dy)

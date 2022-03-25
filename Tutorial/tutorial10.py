@@ -119,11 +119,69 @@ def plot_pathenergy(plot,y0,y1):
    ### reset the plotting window and then plot data ###
    delta = 0.1*(ymax-ymin)
    plot.resetwindow(0.0,ymin-delta,1.0,ymax+delta,"Scaled Energies")
-   plot.plot1(y0,"blue")
-   plot.plot1(y1,"red")
+
+   #yb,yr = (list(t) for t in zip(*sorted(zip(y0,y1))))
+
+   plot.plot1(y0,"red")
+   plot.plot1(y1,"blue")
    #plot.dotplot1(y1,"blue")
 
    return ((imin,y0_imin,y_imin,ydiff_min),(imax,y0_imax,y_imax,ydiff_max))
+
+
+##############################################
+#                                            #
+#             plot_pathenergy0               #
+#                                            #
+##############################################
+def plot_pathenergy0(plot,y0,color):
+   #colors = ("blue","green","yellow","purple","orange")
+   #ncc    = len(colors)
+   ymin = +999999.9
+   ymax = -999999.9
+   for i in range(len(y0)):
+      y = y0[i]
+      if (y>ymax): ymax = y
+      if (y<ymin): ymin = y
+
+
+   ### reset the plotting window and then plot data ###
+   delta = 0.1*(ymax-ymin)
+   plot.resetwindow(0.0,ymin-delta,1.0,ymax+delta,"Scaled Energies")
+
+   #yb,yr = (list(t) for t in zip(*sorted(zip(y0,y1))))
+
+   plot.plot1(y0,color)
+
+   return 
+
+##############################################
+#                                            #
+#             plot_energycorrelation         #
+#                                            #
+##############################################
+def plot_energycorrelation(plot,y0,y1):
+   #colors = ("blue","green","yellow","purple","orange")
+   #ncc    = len(colors)
+   ymin = +999999.9
+   ymax = -999999.9
+   for i in range(len(y1)):
+      y = y1[i]
+      if (y>ymax): ymax = y
+      if (y<ymin): ymin = y
+      if (y0[i]>ymax): ymax = y0[i]
+      if (y0[i]<ymin): ymin = y0[i]
+
+   ### reset the plotting window and then plot data ###
+   delta = 0.1*(ymax-ymin)
+   plot.resetwindow(ymin-delta,ymin-delta,ymax+delta,ymax+delta,"Scaled Energy Correlation")
+
+   yb,yr = (list(t) for t in zip(*sorted(zip(y0,y1))))
+
+   plot.dotplot(yb,yr,"black")
+   #plot.dotplot1(y1,"blue")
+
+   return 
 
 
 ##############################################
@@ -132,6 +190,8 @@ def plot_pathenergy(plot,y0,y1):
 #                                            #
 ##############################################
 def plot_pathdiff(plot,y0,y1):
+   #ya,yb = (list(t) for t in zip(*sorted(zip(y0,y1))))
+
    #colors = ("blue","green","yellow","purple","orange")
    #ncc    = len(colors)
    #delta = 0.1
@@ -176,7 +236,7 @@ def main():
    """
    esmiles to nn program
 
-   Usage: tutorial10 -n "hidden layers -b nbatch -p nepoch"
+   Usage: tutorial10 -n hidden layers -b nbatch -p nepoch
 
    hidden_layers = "2 1"
 
@@ -206,6 +266,11 @@ def main():
    for ix in hidden_layers:
       weights_filename += "-"+str(ix) 
    weights_filename += ".weights"
+
+   param_filename = "tutorial10"
+   for ix in hidden_layers:
+      param_filename += "-"+str(ix) 
+   param_filename += ".param"
 
 
    ##### Read in fei file lazilly and do a simple print out of the data ####
@@ -242,6 +307,11 @@ def main():
    print("emax=",emax)
    print("emid=",emid)
    print("edif=",edif)
+
+   ### writeout param ###
+   with open(param_filename,'wb') as ff:
+      ff.write(pickle.dumps((ninput,nframes,emin,emax,emid,edif)))
+
 
    scaled_energies = [0.0]*nframes
    for i in range(nframes):
@@ -327,9 +397,23 @@ def main():
    ###plot the relative energies using Turtle graphics###
    plot  = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Energies Plot",2)
    plot2 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Diff Energies Plot",3)
+   plot3 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Energies Correlation Plot",5)
+   plot4 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Exp. Energy Plot",6)
+   plot5 = xyplotter.xyplotter(0.0,0.0,1.0,1.0, "Scaled Pred. Energy Plot",7)
 
    iydiff  = plot_pathenergy(plot,scaled_energies[nframes0:],ytrain[nframes0:])
    yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],ytrain[nframes0:])
+
+   iydiff3 = plot_energycorrelation(plot3,scaled_energies[nframes0:],ytrain[nframes0:])
+
+   iydiff4 = plot_pathenergy0(plot4,scaled_energies[nframes0:],"red") 
+   iydiff4 = plot_pathenergy0(plot5,ytrain[nframes0:],"blue") 
+
+   plot.print1("energy.ps")
+   plot2.print1("diffenergy.ps")
+   plot3.print1("energy_correlation.ps")
+   plot4.print1("Exp_energy.ps")
+   plot5.print1("Pred_energy.ps")
 
    id_min = ids[iydiff[0][0]]
    id_max = ids[iydiff[1][0]]
@@ -391,6 +475,11 @@ def main():
       iydiff  = plot_pathenergy(plot,scaled_energies[nframes0:],ytrain[nframes0:])
       yminmax = plot_pathdiff(plot2,scaled_energies[nframes0:],ytrain[nframes0:])
 
+      iydiff3 = plot_energycorrelation(plot3,scaled_energies[nframes0:],ytrain[nframes0:])
+
+      iydiff4 = plot_pathenergy0(plot4,scaled_energies[nframes0:],"red") 
+      iydiff4 = plot_pathenergy0(plot5,ytrain[nframes0:],"blue") 
+
       id_min = ids[iydiff[0][0]]
       id_max = ids[iydiff[1][0]]
 
@@ -414,6 +503,12 @@ def main():
    ### writeout weights ###
    with open(weights_filename,'wb') as ff:
       ff.write(pickle.dumps(weights))
+
+   plot.print1("final_energy.ps")
+   plot2.print1("final_diffenergy.ps")
+   plot3.print1("final_energy_correlation.ps")
+   plot4.print1("Exp_energy.ps")
+   plot5.print1("Pred_energy.ps")
 
    return
 
