@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+
+import sys,os,time,getopt,requests,urllib,re,math,operator
+import json
+
+from itertools import combinations
+from itertools import combinations_with_replacement
+from itertools import permutations
+
+
+#################### machine specifics ######################
+jmol     = "/Users/bylaska/bin/jmol "
+#################### machine specifics ######################
+
+
+#### geturlresult function ####
+#def geturlresult(url):
+#    try:
+#        connection = urllib.urlopen(url)
+#    except urllib.HTTPError as e:
+#        return ""
+#    else:
+#        return connection.read().rstrip()
+
+#### geturlresult function ####
+def geturlresult(url):
+   try:
+      the_page = ""
+      with urllib.request.urlopen(url) as response:
+         the_page = response.read().rstrip()
+   except:
+      the_page = ""
+
+   if isinstance(the_page,bytes): the_page = the_page.decode("utf-8")
+
+   return the_page
+
+
+periodic_table_charge = {
+    'H'  : 1,
+    'He' : 2,
+    'Li' : 3,
+    'Be' : 4,
+    'B'  : 5,
+    'C'  : 6,
+    'N'  : 7,
+    'O'  : 8,
+    'F'  : 9,
+    'Ne' : 10,
+    'Na' : 11,
+    'Mg' : 12,
+    'Al' : 13,
+    'Si' : 14,
+    'P'  : 15,
+    'S'  : 16,
+    'Cl' : 17,
+    'Ar' : 18,
+    'K'  : 19,
+    'Ca' : 20,
+    'Sc' : 21,
+    'Ti' : 22,
+    'V'  : 23,
+    'Cr' : 24,
+    'Mn' : 25,
+    'Fe' : 26,
+    'Co' : 27,
+    'Ni' : 28,
+    'Cu' : 29,
+    'Zn' : 30,
+    'Ga' : 31,
+    'Ge' : 32,
+    'As' : 33,
+    'Se' : 34,
+    'Br' : 35,
+    'Kr' : 36,
+    'Rb' : 37,
+    'Sr' : 38,
+    'Y'  : 39,
+    'Zr' : 40,
+    'Nb' : 41,
+    'Mo' : 42,
+    'Tc' : 43,
+    'Ru' : 44,
+    'Rh' : 45,
+    'Pd' : 46,
+    'Ag' : 47,
+    'Cd' : 48,
+    'In' : 49,
+    'Sn' : 50,
+    'Sb' : 51,
+    'Te' : 52,
+    'I'  : 53,
+    'Xe' : 54,
+    'Cs' : 55,
+    'Ba' : 56,
+    'La' : 57,
+    'Ce' : 58,
+    'Pr' : 59,
+    'Nd' : 60,
+    'Pm' : 61,
+    'Sm' : 62,
+    'Eu' : 63,
+    'Gd' : 64,
+    'Tb' : 65,
+    'Dy' : 66,
+    'Ho' : 67,
+    'Er' : 68,
+    'Tm' : 69,
+    'Yb' : 70,
+    'Lu' : 71,
+    'Hf' : 72,
+    'Ta' : 73,
+    'W'  : 74,
+    'Re' : 75,
+    'Os' : 76,
+    'Ir' : 77,
+    'Pt' : 78,
+    'Au' : 79,
+    'Hg' : 80,
+    'Tl' : 81,
+    'Pb' : 82,
+    'Bi' : 83,
+    'Po' : 84,
+    'At' : 85,
+    'Rn' : 86,
+    'Fr' : 87,
+    'Ra' : 88,
+    'Ac' : 89,
+    'Th' : 90,
+    'Pa' : 91,
+    'U'  : 92,
+    'Np' : 93,
+    'Pu' : 94,
+    'Am' : 95,
+    'Cm' : 96,
+    'Bk' : 97,
+    'Cf' : 98,
+    'Es' : 99,
+    'Fm' : 100,
+    'Md' : 101,
+    'No' : 102,
+    'Lr' : 103,
+    'Rf' : 104,
+    'Ha' : 105,
+    'Sg' : 106,
+    'Bh' : 107,
+    'Hs' : 108,
+    'Mt' : 109
+}
+
+
+
+
+############################# main program ###################################
+
+def main():
+#
+   usage = \
+   """
+   esmiles to nn program
+   
+     Usage: arrows_esmiles2nnxyz -f nnfilename -o energy_type -e energy_dictionary  esmiles [ symbols ]
+   
+     -h prints this message
+   
+   """
+   
+   print("\narrows_esmiles2nn Arrows version")
+   tt      = time.localtime()
+   
+   energy_dictionary = {'C':-23725.067263640653, 'H':-320.1587671072026, 'N':-34207.75150198355, 'O':-47067.1469030725 }
+   energy_type       = "gaq"
+   nnfilename        = "nnxyz_chno_b3lyp.dat"
+   
+   symbol = ['C','H','N','O']
+   maxatoms     = 65
+   maxcharge    = 4
+   maxmult      = 10
+   
+   abbreviation = "no abbreviation"
+   viewjmol = False
+   writexyz = True
+   opts, args = getopt.getopt(sys.argv[1:], "he:o:f:")
+   for o, a in opts:
+     if '-f' in o:
+        nnfilename  = a
+     if '-o' in o:
+        energy_type = a
+     if '-e' in o:
+        energy_dictionary = eval(a)
+     if o in ("-h","--help"):
+       print(usage)
+       exit()
+   
+   if (len(args)<1): 
+      print(usage)
+      exit()
+   
+   esmiles = args[0]
+   if (len(args)>1):
+      symbol = args[1:]
+   
+   
+   esmiles0 = esmiles.replace(" ","%20")
+   
+   arrows_url = 'https://arrows.emsl.pnnl.gov/api/esmiles/\"' + esmiles0.replace("/","arrowslash").strip() + '\"'
+   
+   print("nnfilename = ", nnfilename)
+   print()
+   print("esmiles           =",esmiles)
+   print("symbols           =",symbol)
+   print("energy_type       =",energy_type)
+   print("energy_dictionary =",energy_dictionary)
+   print("maxatoms          =",maxatoms)
+   print("maxcharge         =",maxcharge)
+   print("maxmult           =",maxmult)
+   print("arrows_url  =",arrows_url)
+   try:
+      rr = geturlresult(arrows_url)
+      esmiles_all = json.loads(rr)
+   except:
+      try:
+         rr = geturlresult(arrows_url)
+         esmiles_all = json.loads(rr)
+      except:
+         print(" - API Failed")
+   
+   print("\nlen esmiles_dictionary_all=",len(esmiles_all))
+   if (len(esmiles_all)<=0): exit()
+   
+   count = 0
+   n = len(symbol)
+
+   Id     = ""
+   theory = ""
+   xc     = ""
+   basis  = ""
+   charge = 0
+   mult   = 1
+   eoln = "\n"
+   egas = 99e99
+   for key,esmiles_dict in esmiles_all.items():
+      tempfac  = 298.15/1000.0
+      autokcal = 627.509469
+      etmp     = esmiles_dict['energy']*autokcal
+      if (etmp<egas):
+         xyz_blob = esmiles_dict['xyz_blob']
+         egas     = etmp
+         hgas     = egas + esmiles_dict['enthalpy']*autokcal 
+         ggas     = hgas - esmiles_dict['entropy']*tempfac
+         entropy   = esmiles_dict['entropy']
+         solvation = esmiles_dict['solvation_energy']
+         sitkoff   = esmiles_dict['sitkoff']
+         if (esmiles_dict["solvation_type"] == "COSMO"): solvation = -solvation +sitkoff
+         charge = esmiles_dict['charge']
+         mult   = esmiles_dict['mult']
+         theory = esmiles_dict['theory']
+         xc     = esmiles_dict['xc']
+         basis  = esmiles_dict['basis']
+         outesmiles  = esmiles_dict['esmiles']
+         Id          = esmiles_dict['Id']
+         solvation_type = esmiles_dict['solvation_type']
+   
+   
+      msg = eoln;
+      msg += "Fetched the following entry:"
+      msg += "mformula = " + esmiles_dict['mformula'] + eoln
+      msg += "iupac    = " + esmiles_dict['iupac']    + eoln
+      msg += "smiles   = " + esmiles_dict['smiles']   + eoln
+      msg += "csmiles  = " + esmiles_dict['csmiles']  + eoln
+      msg += "esmiles  = " + esmiles_dict['esmiles']  + eoln
+      msg += "InChI    = " + esmiles_dict['InChI']    + eoln
+      msg += "InChiKey = " + esmiles_dict['InChiKey'] + eoln
+      #msg += "cid      = " + esmiles_dict['cid']      + eoln
+      #msg += "cas      = " + str(esmiles_dict['cas'])      + eoln
+      #if (esmiles_dict['kegg'] is not None): msg += "kegg     = " + esmiles_dict['kegg']     + eoln
+      msg += "bonding_string  = " + esmiles_dict['bonding_string']  + eoln
+      msg += "covalent_string = " + esmiles_dict['covalent_string'] + eoln
+      msg += "charge          = " + str(esmiles_dict['charge'])     + eoln
+      msg += "mult            = " + str(esmiles_dict['mult'])       + eoln
+   
+   print(msg)
+   print("theory           = ",theory)
+   print("xc               = ",xc)
+   print("basis            = ",basis)
+   print("egas             = ",egas)
+   print("hgas             = ",hgas)
+   print("free energy      = ",ggas)
+   print("solvation energy = ",solvation)
+   print("sitkoff   energy = ",esmiles_dict['sitkoff'])
+   print("aq. free energy  = ", ggas+solvation)
+   
+   natoms     = eval(xyz_blob.strip().split("\n")[0])
+   nkeys      = 1 + 4*natoms
+   input_hash = [0]* (nkeys + (2*maxcharge+1) + maxmult)
+   input_hash[0] = natoms
+   input_hash[nkeys + maxcharge + charge] = 1
+   input_hash[nkeys + (2*maxcharge+1) + (mult-1)] = 1
+
+   nsymbols = {}
+   for sym in symbol:
+      nsymbols[sym] = 0
+   
+   badsym = False
+   ii = 1
+   for xyz in xyz_blob.strip().split("\n")[2:]:
+      ss = xyz.split()
+      sym = ss[0]
+      if (sym in symbol):
+         nsymbols[sym] += 1
+         input_hash[ii]   = periodic_table_charge[sym]
+         input_hash[ii+1] = eval(ss[1])
+         input_hash[ii+2] = eval(ss[2])
+         input_hash[ii+3] = eval(ss[3])
+         ii += 4
+      else:
+         badsym = True
+   
+   if (badsym):
+       print("Exiting because bad symbols found\n")
+       exit()
+   
+   output_hash = ggas+solvation
+   
+   if energy_type=="solvation": output_hash = solvation
+   if energy_type=="entropy":   output_hash = entropy
+   if energy_type=="egas":      output_hash = egas
+   if energy_type=="hgas":      output_hash = hgas
+   if energy_type=="hgas":      output_hash = hgas
+   if energy_type=="ggas":      output_hash = ggas
+   if energy_type=="gaq":       output_hash = ggas+solvation
+   
+   
+   eref = 0.0
+   for sym in symbol:
+      nsym = nsymbols[sym] 
+      eref += nsym*energy_dictionary[sym]
+   
+   
+   inputlayer   = [0]*len(input_hash)
+   for i in range(len(inputlayer)): inputlayer[i] = input_hash[i]
+   
+   outputlayer         = (output_hash - eref)
+   
+   if (natoms>maxatoms):
+       print("Exiting because natoms>maxatoms\n")
+       exit()
+   
+   print("input_hash =",input_hash)
+   print("output_hash=",output_hash)
+   
+   print()
+   print()
+   print("NN Input:")
+   print("Id                =",Id)
+   print("esmiles           =",outesmiles)
+   print("theory            =",theory)
+   print("xc                =",xc)
+   print("basis             =",basis)
+   print("charge            =",charge)
+   print("solvation_type    =",solvation_type)
+   print("mult              =",mult)
+   print("natoms            =",natoms)
+   for sym in symbol:
+      print("number of " + sym + "-atoms = ",nsymbols[sym],energy_dictionary[sym])
+   
+   print("eref              =",eref,(output_hash-eref))
+   
+   print()
+   print()
+   print("sizeqm            =",2*maxcharge+1+maxmult)
+   print("len(inputlayer)   =",len(inputlayer))
+   print()
+   print("InputLayer        =",inputlayer)
+   print("OutputLayer       =",outputlayer)
+   print()
+   
+   if ((xc=="b3lyp") and (basis=="6-311++G(2d,2p)") and (solvation_type=="COSMO")):
+      nnstr = str(Id) + " inputLayer: " 
+      for x in inputlayer:
+         nnstr += str(x) + " "
+      nnstr += ":inputLayer " 
+      nnstr += " outputLayer: " + str(outputlayer) + " :outputLayer "
+      print(nnstr)
+      if (len(nnfilename)>1):
+         print("Appending to ", nnfilename)
+         with open(nnfilename,"a") as ff:
+            ff.write(nnstr+"\n")
+
+
+if __name__ == "__main__":
+   main()
+
+

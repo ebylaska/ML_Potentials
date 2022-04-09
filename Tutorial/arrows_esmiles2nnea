@@ -1,0 +1,784 @@
+#!/usr/bin/env python3
+
+import sys,os,time,getopt,requests,urllib,re,math,operator
+import json
+
+from itertools import combinations
+from itertools import combinations_with_replacement
+from itertools import permutations
+
+
+#################### machine specifics ######################
+jmol     = "/Users/bylaska/bin/jmol "
+#################### machine specifics ######################
+
+
+#### geturlresult function ####
+#def geturlresult(url):
+#    try:
+#        connection = urllib.urlopen(url)
+#    except urllib.HTTPError as e:
+#        return ""
+#    else:
+#        return connection.read().rstrip()
+
+#### geturlresult function ####
+def geturlresult(url):
+   try:
+      the_page = ""
+      with urllib.request.urlopen(url) as response:
+         the_page = response.read().rstrip()
+   except:
+      the_page = ""
+
+   if isinstance(the_page,bytes): the_page = the_page.decode("utf-8")
+
+   return the_page
+
+
+
+
+covalentstr = '''
+H 32 0 0 0
+He 46 0 0 0
+Li 133 124 0 0
+Be 102 90 85 0
+B 85 78 73 0
+C 75 67 60 68
+N 71 60 54 0
+O 63 57 53 0
+F 64 59 53 0
+Ne 67 96 0 0
+Na 155 160 0 0
+Mg 139 132 127 0
+Al 126 113 111 0
+Si 116 107 102 0
+P 111 102 94 0
+S 103 94 95 0
+Cl 99 95 93 0
+Ar 96 107 96 0
+K 196 193 0 0
+Ca 171 147 133 0
+Sc 148 116 114 0
+Ti 136 117 108 0
+V 134 112 106 0
+Cr 122 111 103 0
+Mn 119 105 103 0
+Fe 116 109 102 0
+Co 111 103 96 0
+Ni 110 101 101 0
+Cu 112 115 120 0
+Zn 118 120 0 0
+Ga 124 116 121 0
+Ge 121 111 114 0
+As 121 114 106 0
+Se 116 107 107 0
+Br 114 109 110 0
+Kr 117 121 108 0
+Rb 210 202 0 0
+Sr 185 157 139 0
+Y 163 130 124 0
+Zr 154 127 121 0
+Nb 147 125 116 0
+Mo 138 121 113 0
+Tc 128 120 110 0
+Ru 125 114 103 0
+Rh 125 110 106 0
+Pd 120 117 112 0
+Ag 128 139 137 0
+Cd 136 144 0 0
+In 142 136 146 0
+Sn 140 130 132 0
+Sb 140 133 127 0
+Te 136 128 121 0
+I 133 129 125 0
+Xe 131 135 122 0
+Cs 232 196 0 0
+Ba 196 161 149 0
+La 180 139 139	 0
+Ce 163 137 131 0
+Pr 176 138 128 0
+Nd 174 137 0 0
+Pm 173 135 0 0
+Sm 172 134 0 0
+Eu 168 134 0 0
+Gd 169 135 132 0
+Tb 168 135 0 0
+Dy 167 133 0 0
+Ho 166 133 0 0
+Er 165 133 0 0
+Tm 164 131 0 0
+Yb 170 129 0 0
+Lu 162 131 131	 0
+Hf 152 128 122	 0
+Ta 146 126 119	 0
+W 137 120 115	 0
+Re 131 119 110	 0
+Os 129 116 109	 0
+Ir 122 115 107	 0
+Pt 123 112 110	 0
+Au 124 121 123 0
+Hg 133 142 0 0
+Tl 144 142 150 0
+Pb 144 135 137 0
+Bi 151 141 135 0
+Po 145 135 129 0
+At 147 138 138 0
+Rn 142 145 133 0
+Fr 223 218 0 0
+Ra 201 173 159 0
+Ac 186 153 140 0
+Th 175 143 136	 0
+Pa 169 138 129	 0
+U 170 134 118 0
+Np 171 136 116 0
+Pu 172 135 0  0
+Am 166 135 0 0
+Cm 166 136 0 0
+Bk 168 139 0 0
+Cf 168 140 0 0
+Es 165 140 0 0
+Fm 167 0 0 0
+Md 173 139 0 0
+No 176 0 0  0
+Lr 161 141 0 0
+Rf 157 140 131 0
+Db 149 136 126 0
+Sg 143 128 121 0
+Bh 141 128 119 0
+Hs 134 125 118 0
+Mt 129 125 113 0
+Ds 128 116 112 0
+Rg 121 116 118	 0
+Cn 122 137 130 0
+Uut 136 0 0 0
+Fl 143 0 0 0
+Uup 162  0 0 0
+Lv 175 0 0 0
+Uus 165 0 0 0
+Uuo 157  0 0 0
+'''
+rcovalent = {}
+for ln in covalentstr.strip().split('\n'):
+   ss = ln.split()
+   rcovalent[ss[0]] = (0.01*eval(ss[1]),0.01*eval(ss[2]),0.01*eval(ss[3]),0.01*eval(ss[4]))
+
+
+###########################################
+#                                         #
+#              bond_order                 #
+#                                         #
+###########################################
+def bond_order(rc1,rc2,r12):
+   dd = 0.0001
+   cov = (abs(r12-(rc1[0]+rc2[0]))/(rc1[0]+rc2[0]+dd),
+          abs(r12-(rc1[1]+rc2[1]))/(rc1[1]+rc2[1]+dd),
+          abs(r12-(rc1[2]+rc2[2]))/(rc1[2]+rc2[2]+dd),
+          abs(r12-(rc1[3]+rc2[3]))/(rc1[3]+rc2[3]+dd))
+   imin = 0
+   dmin = cov[0]
+   if (cov[1]<dmin):
+      dmin = cov[1]
+      imin = 1
+   if (cov[2]<dmin):
+      dmin = cov[2]
+      imin = 2
+   if (cov[3]<dmin):
+      dmin = cov[3]
+      imin = 3
+   b = 0
+   if (cov[imin]<0.10):
+      b = 1+imin
+      if (imin==3):
+         b = 1.5
+   return b
+
+
+###########################################
+#                                         #
+#            xyzdat_to_adjmat             #
+#                                         #
+###########################################
+def xyzdat_to_adjmat(xyzdat):
+   #### read xyz file ####
+   fdict = {}
+   verts  = []
+   symbol = []
+   rxyz   = []
+   n = eval(xyzdat.strip().split("\n")[0].strip())
+   for line in xyzdat.strip().split("\n")[2:]:
+      if (line[1]==' '):
+         key = line[0]
+      else:
+         key = line[0:2]
+      if (key in fdict):
+         fdict[key] += 1
+      else:
+         fdict[key] = 1
+      ss = line.split()
+      symbol.append(ss[0].strip())
+      tple = ('atom',(0.0, ss[0].strip(), '', 0, 0, -1))
+      verts.append(tple)
+      rxyz.append(eval(ss[1]))
+      rxyz.append(eval(ss[2]))
+      rxyz.append(eval(ss[3]))
+
+   #### generate mformula ####
+   mformula = ''
+   for x  in sorted(fdict.items(), key=operator.itemgetter(0)):
+      mformula += x[0] + "%d" % x[1]
+
+   #### generate adjacency matrix ####
+   rij    = []
+   adjmat = []
+   for i in range(n):
+      rij.append([0.0]*n)
+      adjmat.append([0]*n)
+   for i1 in range(n):
+      for j1 in range(n):
+         symi = symbol[i1]
+         symj = symbol[j1]
+         rci   = rcovalent[symbol[i1]]
+         rcj   = rcovalent[symbol[j1]]
+         dx = rxyz[3*i1]   - rxyz[3*j1]
+         dy = rxyz[3*i1+1] - rxyz[3*j1+1]
+         dz = rxyz[3*i1+2] - rxyz[3*j1+2]
+         r = math.sqrt(dx*dx + dy*dy + dz*dz)
+         rij[i1][j1] = r
+         if i1!=j1:
+            adjmat[i1][j1] = bond_order(rci,rcj,r)
+
+   return (n,mformula,symbol,adjmat)
+
+
+
+###########################################
+#                                         #
+#       adjmat_atom_bonding_strings       #
+#                                         #
+###########################################
+
+def adjmat_atom_bonding_strings(symbol,adjmat,i):
+
+   n = len(adjmat)
+
+   #### generate bonding ####
+   covbondcount = {}
+   bondcount = {}
+   for j in range(n):
+      if (adjmat[i][j] > 0):
+         symi = symbol[i]
+         symj = symbol[j]
+         key = symi.strip() + symj.strip()
+
+         if (key in bondcount):
+            bondcount[key] += 1
+         else:
+            bondcount[key] = 1
+
+         covkey = ""
+         if (abs(adjmat[i][j]-1.0)<0.1): covkey = key + "xs"
+         if (abs(adjmat[i][j]-1.5)<0.1): covkey = key + "xa"
+         if (abs(adjmat[i][j]-2.0)<0.1): covkey = key + "xd"
+         if (abs(adjmat[i][j]-3.0)<0.1): covkey = key + "xt"
+         if (abs(adjmat[i][j]-4.0)<0.1): covkey = key + "xq"
+         #covkey = key + "(%.1f)" % (adjmat[i][j])
+         if (len(covkey)>1):
+            if (covkey in covbondcount):
+               covbondcount[covkey] += 1
+            else:
+               covbondcount[covkey] = 1
+   bonding = ''
+   for x  in sorted(bondcount.items(), key=operator.itemgetter(0)):
+      bonding += x[0] + "%d" % x[1]
+   covbonding = ''
+   for x  in sorted(covbondcount.items(), key=operator.itemgetter(0)):
+      covbonding += x[0] + "%d" % x[1]
+   covbonding = covbonding.strip(',')
+
+
+   #### generate bonding2 - j-i-k or k-i-j  ####
+   bond2count = {}
+   for j in range(n):
+      for k in range(j+1,n):
+         if (adjmat[i][j] > 0) and (adjmat[i][k] > 0):
+            symi = symbol[i]
+            symj = symbol[j]
+            symk = symbol[k]
+            if (symj<symk):
+               key = symj.strip() + symi.strip() + symk.strip()
+            else:
+               key = symk.strip() + symi.strip() + symj.strip()
+            if (key in bond2count):
+               bond2count[key] += 1
+            else:
+               bond2count[key] = 1
+   bonding2 = ''
+   for x  in sorted(bond2count.items(), key=operator.itemgetter(0)):
+      bonding2 += x[0] + "%d" % x[1]
+
+
+   #### generate bonding3 - k-i-j-l ####
+   bond3count = {}
+   for j in range(n):
+      if (adjmat[i][j]>0):
+         for k in range(n):
+            if (adjmat[i][k]>0) and (k!=i) and (k!=j):
+               for l in range(n):
+                  if (adjmat[j][l]>0) and (l!=i) and (l!=j) and (l!=k):
+                     symi = symbol[i]
+                     symj = symbol[j]
+                     symk = symbol[k]
+                     syml = symbol[l]
+                     key = symk.strip() + symi.strip() + symj.strip() + syml.strip()
+                     if (key in bond3count):
+                        bond3count[key] += 1
+                     else:
+                        bond3count[key] = 1
+   bonding3 = ''
+   for x  in sorted(bond3count.items(), key=operator.itemgetter(0)):
+      bonding3 += x[0] + "%d" % x[1]
+
+   #### generate bonding3r -  i-j-k-l ####
+   bond3rcount = {}
+   for j in range(n):
+      if (adjmat[i][j]>0):
+         for k in range(n):
+            if (k!=i) and (k!=j) and (adjmat[j][k]>0):
+               for l in range(n):
+                  if (adjmat[k][l]>0) and (l!=i) and (l!=j) and (l!=k):
+                     symi = symbol[i]
+                     symj = symbol[j]
+                     symk = symbol[k]
+                     syml = symbol[l]
+                     key = symi.strip() + symj.strip() + symk.strip() + syml.strip() + "xr"
+                     if (key in bond3rcount):
+                        bond3rcount[key] += 1
+                     else:
+                        bond3rcount[key] = 1
+   bonding3r = ''
+   for x  in sorted(bond3rcount.items(), key=operator.itemgetter(0)):
+      bonding3r += x[0] + "%d" % x[1]
+
+   #### generate bonding4r -  i-j-k-l-m ####
+   bond4rcount = {}
+   for j in range(n):
+      if (adjmat[i][j]>0):
+         for k in range(n):
+            if (k!=i) and (k!=j) and (adjmat[j][k]>0):
+               for l in range(n):
+                  if (l!=i) and (l!=j) and (l!=k) and (adjmat[k][l]>0):
+                     for m in range(n):
+                        if (adjmat[l][m]>0) and (m!=i) and (m!=j) and (m!=k) and (m!=l):
+                           symi = symbol[i]
+                           symj = symbol[j]
+                           symk = symbol[k]
+                           syml = symbol[l]
+                           symm = symbol[m]
+                           key = symi.strip() + symj.strip() + symk.strip() + syml.strip() + symm.strip()
+                           if (key in bond4rcount):
+                              bond4rcount[key] += 1
+                           else:
+                              bond4rcount[key] = 1
+   bonding4r = ''
+   for x  in sorted(bond4rcount.items(), key=operator.itemgetter(0)):
+      bonding4r += x[0] + "%d" % x[1]
+
+   #### generate bonding5r -  i-j-k-l-m-a ####
+   bond5rcount = {}
+   for j in range(n):
+      if (adjmat[i][j]>0):
+         for k in range(n):
+            if (k!=i) and (k!=j) and (adjmat[j][k]>0):
+               for l in range(n):
+                  if (l!=i) and (l!=j) and (l!=k) and (adjmat[k][l]>0):
+                     for m in range(n):
+                        if (m!=i) and (m!=j) and (m!=k) and (m!=l) and (adjmat[l][m]>0):
+                           for a in range(n):
+                              if (adjmat[m][a]>0) and (a!=i) and (a!=j) and (a!=k) and (a!=l) and (a!=m):
+                                 symi = symbol[i]
+                                 symj = symbol[j]
+                                 symk = symbol[k]
+                                 syml = symbol[l]
+                                 symm = symbol[m]
+                                 syma = symbol[a]
+                                 key = symi.strip() + symj.strip() + symk.strip() + syml.strip() + symm.strip() + syma.strip()
+                                 if (key in bond5rcount):
+                                    bond5rcount[key] += 1
+                                 else:
+                                    bond5rcount[key] = 1
+   bonding5r = ''
+   for x  in sorted(bond5rcount.items(), key=operator.itemgetter(0)):
+      bonding5r += x[0] + "%d" % x[1]
+
+   #return  (mformula + ":" + bonding + ":" + bonding2 + ":" + covbonding + ":" + bonding3 + ":" + bonding3r + ":" + bonding4r + ":" + bonding5r)
+   return  (covbonding + ":" + bonding2 + ":" + bonding3 + ":" + bonding3r + ":" + bonding4r + ":" + bonding5r)
+
+
+
+
+
+def generate_atom_keys(nlevels,symbol,i):
+   n = len(symbol)
+   keys = {}
+   count = 0
+
+   if (nlevels>=1):
+      for j in range(n):
+         symi = symbol[i]
+         symj = symbol[j]
+         key  = symi+symj
+         for llb in ["xs","xa","xd","xt","xq"]:
+            lkey = key + llb
+            if (lkey not in keys):
+               keys[lkey] = count
+               count += 1
+   if (nlevels>=2):
+      for j in range(n):
+         for k in range(n):
+            symi = symbol[i]
+            symj = symbol[j]
+            symk = symbol[k]
+            if (symj<symk): 
+               key = symj + symi + symk
+            else:
+               key = symk + symi + symj
+            if (key not in keys):
+               keys[key] = count
+               count += 1
+   if (nlevels>=3):
+      for j in range(n):
+         for k in range(n):
+            for l in range(n):
+               symi = symbol[i]
+               symj = symbol[j]
+               symk = symbol[k]
+               syml = symbol[l]
+               key = symk + symi + symj + syml
+               if (key not in keys):
+                  keys[key] = count
+                  count += 1
+   if (nlevels>=4):
+      for j in range(n):
+         for k in range(n):
+            for l in range(n):
+               symi = symbol[i]
+               symj = symbol[j]
+               symk = symbol[k]
+               syml = symbol[l]
+               key = symi + symj + symk + syml + "xr"
+               if (key not in keys):
+                  keys[key] = count
+                  count += 1
+   if (nlevels>=5):
+      for j in range(n):
+         for k in range(n):
+            for l in range(n):
+               for m in range(n):
+                  symi = symbol[i]
+                  symj = symbol[j]
+                  symk = symbol[k]
+                  syml = symbol[l]
+                  symm = symbol[m]
+                  key = symi + symj + symk + syml + symm
+                  if (key not in keys):
+                     keys[key] = count
+                     count += 1
+   if (nlevels>=6):
+      for j in range(n):
+         for k in range(n):
+            for l in range(n):
+               for m in range(n):
+                  for a in range(n):
+                     symi = symbol[i]
+                     symj = symbol[j]
+                     symk = symbol[k]
+                     syml = symbol[l]
+                     symm = symbol[m]
+                     syma = symbol[a]
+                     key = symi.strip() + symj.strip() + symk.strip() + syml.strip() + symm.strip() + syma.strip()
+                     if (key not in keys):
+                        keys[key] = count
+                        count += 1
+   return keys
+
+
+
+
+
+
+def atom_bonding_string_to_nn_input(nlevels,maxcharge,charge,maxmult,mult,keys,atom_bonding_string):
+   x1 = []
+   y1 = []
+   for ib in range(nlevels):
+      curbonding = re.split('(\d+)', atom_bonding_string.strip().split(":")[ib])
+      x1 += curbonding[0:-1:2]
+      y1 += curbonding[1::2]
+
+   nkeys = len(keys)
+   input_hash = [0]* (nkeys+ (2*maxcharge+1) + maxmult)
+   input_hash[nkeys + maxcharge + charge] = 1
+   input_hash[nkeys + (2*maxcharge+1) + (mult-1)] = 1
+
+   keystop = False
+   for x in x1:
+      if (x not in keys): 
+         keystop = True
+   if keystop:
+       print("Exiting because key not in symbols\n")
+       exit()
+  
+   for i in range(len(x1)):
+      input_hash[keys[x1[i]]] = eval(y1[i])
+
+
+   return input_hash 
+
+
+
+############################# main program ###################################
+
+def main():
+#
+   usage = \
+   """
+   esmiles to embedded atom nn program
+   
+     Usage: arrows_esmiles2nnea -l nlevels -f nnfilename -o energy_type -e energy_dictionary  esmiles [ symbols ]
+   
+     -h prints this message
+   
+   """
+   
+   print("\narrows_esmiles2nnea Arrows version")
+   tt      = time.localtime()
+   
+   energy_dictionary = {'C':-23725.067263640653, 'H':-320.1587671072026, 'N':-34207.75150198355, 'O':-47067.1469030725 }
+   energy_type       = "gaq"
+   nnfilename        = "nnea_chno_b3lyp.dat"
+   
+   symbol = ['C','H','N','O']
+   maxatoms     = 65
+   maxcharge    = 4
+   maxmult      = 10
+   nlevels      = 6
+   
+   abbreviation = "no abbreviation"
+   viewjmol = False
+   writexyz = True
+   opts, args = getopt.getopt(sys.argv[1:], "he:o:f:l:")
+   for o, a in opts:
+     if '-f' in o:
+        nnfilename  = a
+     if '-o' in o:
+        energy_type = a
+     if '-e' in o:
+        energy_dictionary = eval(a)
+     if '-l' in o:
+        nlevels = eval(a)
+        if (nlevels>7): nlevels = 7
+        if (nlevels<1): nlevels = 1
+     if o in ("-h","--help"):
+       print(usage)
+       exit()
+   
+   if (len(args)<1): 
+      print(usage)
+      exit()
+   
+   esmiles = args[0]
+   if (len(args)>1):
+      symbol = args[1:]
+   
+   
+   esmiles0 = esmiles.replace(" ","%20")
+   
+   arrows_url = 'https://arrows.emsl.pnnl.gov/api/esmiles/\"' + esmiles0.replace("/","arrowslash").strip() + '\"'
+   
+   print("nnfilename = ", nnfilename)
+   print()
+   print("esmiles           =",esmiles)
+   print("symbols           =",symbol)
+   print("energy_type       =",energy_type)
+   print("energy_dictionary =",energy_dictionary)
+   print("maxatoms          =",maxatoms)
+   print("maxcharge         =",maxcharge)
+   print("maxmult           =",maxmult)
+   print("nlevels           =",nlevels)
+   print("arrows_url  =",arrows_url)
+   try:
+      rr = geturlresult(arrows_url)
+      esmiles_all = json.loads(rr)
+   except:
+      try:
+         rr = geturlresult(arrows_url)
+         esmiles_all = json.loads(rr)
+      except:
+         print(" - API Failed")
+   
+   print("\nlen esmiles_dictionary_all=",len(esmiles_all))
+   if (len(esmiles_all)<=0): exit()
+   
+
+   
+   Id     = ""
+   theory = ""
+   xc     = ""
+   basis  = ""
+   charge = 0
+   mult   = 1
+   eoln = "\n"
+   egas = 99e99
+   for key,esmiles_dict in esmiles_all.items():
+      tempfac  = 298.15/1000.0
+      autokcal = 627.509469
+      etmp     = esmiles_dict['energy']*autokcal
+      if (etmp<egas):
+         xyz_blob = esmiles_dict['xyz_blob']
+         egas     = etmp
+         hgas     = egas + esmiles_dict['enthalpy']*autokcal 
+         ggas     = hgas - esmiles_dict['entropy']*tempfac
+         entropy   = esmiles_dict['entropy']
+         solvation = esmiles_dict['solvation_energy']
+         sitkoff   = esmiles_dict['sitkoff']
+         if (esmiles_dict["solvation_type"] == "COSMO"): solvation = -solvation +sitkoff
+         bonding1 = re.split('(\d+)', esmiles_dict['bonding_string'].strip().split(":")[0])
+         bonding2 = re.split('(\d+)', esmiles_dict['bonding_string'].strip().split(":")[1])
+         bonding3 = re.split('(\d+)', esmiles_dict['bonding_string'].strip().split(":")[2])
+         charge = esmiles_dict['charge']
+         mult   = esmiles_dict['mult']
+         theory = esmiles_dict['theory']
+         xc     = esmiles_dict['xc']
+         basis  = esmiles_dict['basis']
+         outesmiles  = esmiles_dict['esmiles']
+         Id          = esmiles_dict['Id']
+         solvation_type = esmiles_dict['solvation_type']
+   
+   
+      msg = eoln;
+      msg += "Fetched the following entry:"
+      msg += "mformula = " + esmiles_dict['mformula'] + eoln
+      msg += "iupac    = " + esmiles_dict['iupac']    + eoln
+      msg += "smiles   = " + esmiles_dict['smiles']   + eoln
+      msg += "csmiles  = " + esmiles_dict['csmiles']  + eoln
+      msg += "esmiles  = " + esmiles_dict['esmiles']  + eoln
+      msg += "InChI    = " + esmiles_dict['InChI']    + eoln
+      msg += "InChiKey = " + esmiles_dict['InChiKey'] + eoln
+      #msg += "cid      = " + esmiles_dict['cid']      + eoln
+      #msg += "cas      = " + str(esmiles_dict['cas'])      + eoln
+      #if (esmiles_dict['kegg'] is not None): msg += "kegg     = " + esmiles_dict['kegg']     + eoln
+      msg += "bonding_string  = " + esmiles_dict['bonding_string']  + eoln
+      msg += "covalent_string = " + esmiles_dict['covalent_string'] + eoln
+      msg += "charge          = " + str(esmiles_dict['charge'])     + eoln
+      msg += "mult            = " + str(esmiles_dict['mult'])       + eoln
+   
+   print(msg)
+   print("theory           = ",theory)
+   print("xc               = ",xc)
+   print("basis            = ",basis)
+   print("egas             = ",egas)
+   print("hgas             = ",hgas)
+   print("free energy      = ",ggas)
+   print("solvation energy = ",solvation)
+   print("sitkoff   energy = ",esmiles_dict['sitkoff'])
+   print("aq. free energy  = ", ggas+solvation)
+
+   #define keys for atoms
+   n = len(symbol)
+   atom_keys = {}
+   for i in range(n):
+      atom_key            = symbol[i]
+      atom_keys[atom_key] = generate_atom_keys(nlevels,symbol,i)
+
+   badsymbol = False
+   nsymbols = {}
+   for sym in symbol:
+      nsymbols[sym] = 0
+
+   print()
+   print("atom bonding strings:")
+   (natoms,mformula,molecule_symbol,adjmat) = xyzdat_to_adjmat(xyz_blob)
+   inputlayer = mformula + " " + str(natoms) +" " + str(charge) + " " + str(mult)
+   for i in range(natoms):
+      symi = molecule_symbol[i]
+      atom_bonding_string = adjmat_atom_bonding_strings(molecule_symbol,adjmat,i)
+      print("  atom=",i," symbol=",symi," atom_bonding_string=",atom_bonding_string)
+      tmpstr = str(i) + " " +  symi + " " + atom_bonding_string
+      inputlayer += " $$ " + tmpstr
+      if (symi in symbol):
+         nsymbols[symi] += 1
+      else:
+         badsymbol = True
+
+      #scaling = 1.0/11.0
+      #nn_input = atom_bonding_string_to_nn_input(nlevels,maxcharge,charge,maxmult,mult,atom_keys[symi],atom_bonding_string)
+      #for ii in range(len(nn_input)):           
+      #   nn_input[ii]  = nn_input[ii]*scaling
+      #print("  --> nn_input=",nn_input)
+
+
+   output_energy = ggas+solvation
+   
+   if energy_type=="solvation": output_energy = solvation
+   if energy_type=="entropy":   output_energyntropy
+   if energy_type=="egas":      output_energy = egas
+   if energy_type=="hgas":      output_energy = hgas
+   if energy_type=="hgas":      output_energy = hgas
+   if energy_type=="ggas":      output_energy = ggas
+   if energy_type=="gaq":       output_energy = ggas+solvation
+
+   if (badsymbol):
+       print("Exiting because bad symbol found\n")
+       exit()
+   
+   
+   eref = 0.0
+   for sym in symbol:
+      nsym = nsymbols[sym] 
+      eref += nsym*energy_dictionary[sym]
+   
+   outputlayer         = (output_energy - eref)
+   
+   if (natoms>maxatoms):
+       print("Exiting because natoms>maxatoms\n")
+       exit()
+   
+   print()
+   print()
+   print("NN Input:")
+   print("Id                =",Id)
+   print("esmiles           =",outesmiles)
+   print("theory            =",theory)
+   print("xc                =",xc)
+   print("basis             =",basis)
+   print("charge            =",charge)
+   print("solvation_type    =",solvation_type)
+   print("mult              =",mult)
+   print("natoms            =",natoms)
+   for sym in symbol:
+      print("number of " + sym + "-atoms = ",nsymbols[sym],energy_dictionary[sym])
+   
+   print("eref              =",eref)
+   print("energy-eref       =",(output_energy-eref))
+   
+   #print()
+   #print("sizeqm            =",2*maxcharge+1+maxmult)
+   print()
+   print("InputLayer        =",inputlayer)
+   print("OutputLayer       =",outputlayer)
+   print()
+   
+   if ((xc=="b3lyp") and (basis=="6-311++G(2d,2p)") and (solvation_type=="COSMO")):
+      nnstr = str(Id) + " inputLayer: " + inputlayer + " :inputLayer "
+      nnstr += " outputLayer: " + str(outputlayer) + " :outputLayer "
+      print(nnstr)
+      if (len(nnfilename)>1):
+         print("Appending to ", nnfilename)
+         with open(nnfilename,"a") as ff:
+            ff.write(nnstr+"\n")
+
+
+if __name__ == "__main__":
+   main()
+
+
