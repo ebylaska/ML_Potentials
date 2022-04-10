@@ -620,6 +620,8 @@ def main():
    if (len(esmiles_all)<=0): exit()
    
 
+   tempfac  = 298.15/1000.0
+   autokcal = 627.509469
    
    Id     = ""
    theory = ""
@@ -630,8 +632,6 @@ def main():
    eoln = "\n"
    egas = 99e99
    for key,esmiles_dict in esmiles_all.items():
-      tempfac  = 298.15/1000.0
-      autokcal = 627.509469
       etmp     = esmiles_dict['energy']*autokcal
       if (etmp<egas):
          xyz_blob = esmiles_dict['xyz_blob']
@@ -720,12 +720,13 @@ def main():
    output_energy = ggas+solvation
    
    if energy_type=="solvation": output_energy = solvation
-   if energy_type=="entropy":   output_energyntropy
+   if energy_type=="entropy":   output_energy = entropy
    if energy_type=="egas":      output_energy = egas
-   if energy_type=="hgas":      output_energy = hgas
    if energy_type=="hgas":      output_energy = hgas
    if energy_type=="ggas":      output_energy = ggas
    if energy_type=="gaq":       output_energy = ggas+solvation
+
+   output_all_energies = [solvation,entropy,egas,hgas,ggas,ggas+solvation]
 
    if (badsymbol):
        print("Exiting because bad symbol found\n")
@@ -758,8 +759,9 @@ def main():
    for sym in symbol:
       print("number of " + sym + "-atoms = ",nsymbols[sym],energy_dictionary[sym])
    
-   print("eref              =",eref)
    print("energy-eref       =",(output_energy-eref))
+   print("all_energies      =",output_all_energies)
+   print("eref              =",eref)
    
    #print()
    #print("sizeqm            =",2*maxcharge+1+maxmult)
@@ -770,7 +772,7 @@ def main():
    
    if ((xc=="b3lyp") and (basis=="6-311++G(2d,2p)") and (solvation_type=="COSMO")):
       nnstr = str(Id) + " inputLayer: " + inputlayer + " :inputLayer "
-      nnstr += " outputLayer: " + str(outputlayer) + " :outputLayer "
+      nnstr += " outputLayer: " + str(outputlayer)+" "+str(output_all_energies[0])+" "+str(output_all_energies[1])+" "+str(output_all_energies[2])+" "+str(output_all_energies[3])+" "+str(output_all_energies[4])+" "+str(output_all_energies[5])+" "+str(eref)+" :outputLayer "
       print(nnstr)
       if (len(nnfilename)>1):
          print("Appending to ", nnfilename)
