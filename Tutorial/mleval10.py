@@ -31,7 +31,7 @@ import myfeedforward6 as myfeedforward
 
 #### going to read a URL ####
 #mlfilename = "/Users/bylaska/bin/nn_chno_b3lyp.dat"
-mlfilename = "nn_chno_b3lyp.dat"
+#mlfilename = "nn_chno_b3lyp.dat"
 
 
 
@@ -528,7 +528,7 @@ def main():
    """
    esmiles to nn program
 
-   Usage: mleval10 -n hidden layers  esmiles
+   Usage: mleval10 -f nn_file.dat  -n hidden layers  esmiles
 
    hidden_layers = "2 1"
 
@@ -539,11 +539,14 @@ def main():
    print("\nmleval10 Arrows version")
 
    hidden_layers = [2,1]
+   nnfilename = ""
 
-   opts, args = getopt.getopt(sys.argv[1:], "hn:")
+   opts, args = getopt.getopt(sys.argv[1:], "hn:f:")
    for o, a in opts:
       if '-n' in o:
          hidden_layers = [eval(x) for x in a.strip().split()]
+      if '-f' in o:
+         nnfilename = a
       if o in ("-h","--help"):
          print(usage)
          exit()
@@ -551,12 +554,14 @@ def main():
    esmiles = args[0]
    print("esmiles=",esmiles)
 
-   weights_filename = "tutorial10"
+   #weights_filename = "tutorial10"
+   weights_filename = nnfilename.replace(".dat","")
    for ix in hidden_layers:
       weights_filename += "-"+str(ix) 
    weights_filename += ".weights"
 
-   param_filename = "tutorial10"
+   #param_filename = "tutorial10"
+   param_filename = nnfilename.replace(".dat","")
    for ix in hidden_layers:
       param_filename += "-"+str(ix) 
    param_filename += ".param"
@@ -591,7 +596,6 @@ def main():
 
    energy_dictionary = {'C':-23725.067263640653, 'H':-320.1587671072026, 'N':-34207.75150198355, 'O':-47067.1469030725 }
    energy_type       = "gaq"
-   nnfilename        = ""
 
    symbol = ['C','H','N','O']
    maxatoms     = 25

@@ -23,7 +23,7 @@ import myfeedforward6 as myfeedforward
 
 #### going to read a URL ####
 #mlfilename = "/Users/bylaska/bin/nn_chno_b3lyp.dat"
-mlfilename = "nn_chno_b3lyp.dat"
+#mlfilename = "nn_chno_b3lyp.dat"
 
 
 
@@ -236,7 +236,7 @@ def main():
    """
    esmiles to nn program
 
-   Usage: tutorial10 -n hidden layers -b nbatch -p nepoch
+   Usage: tutorial10 -f nn_file.dat -n hidden layers -b nbatch -p nepoch
 
    hidden_layers = "2 1"
 
@@ -249,8 +249,9 @@ def main():
    hidden_layers = [2,1]
    nbatch = 25
    nepoch = 100
+   mlfilename = "nn_chno_b3lyp.dat"
 
-   opts, args = getopt.getopt(sys.argv[1:], "hn:b:p:")
+   opts, args = getopt.getopt(sys.argv[1:], "hn:b:p:f:")
    for o, a in opts:
       if '-n' in o:
          hidden_layers = [eval(x) for x in a.strip().split()]
@@ -258,16 +259,20 @@ def main():
          nbatch = eval(a)
       if '-p' in o:
          nepoch = eval(a)
+      if '-f' in o:
+         mlfilename = a
       if o in ("-h","--help"):
          print(usage)
          exit()
 
-   weights_filename = "tutorial10"
+   #weights_filename = "tutorial10"
+   weights_filename = mlfilename.replace(".dat","")
    for ix in hidden_layers:
       weights_filename += "-"+str(ix) 
    weights_filename += ".weights"
 
-   param_filename = "tutorial10"
+   #param_filename = "tutorial10"
+   param_filename = mlfilename.replace(".dat","")
    for ix in hidden_layers:
       param_filename += "-"+str(ix) 
    param_filename += ".param"
