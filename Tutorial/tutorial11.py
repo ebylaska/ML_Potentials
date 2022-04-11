@@ -317,37 +317,20 @@ def main():
    #print("edif=",edif)
 
 
+   print("Calculating OLS:")
+
    X = np.array(xinputs)
    Y = np.array(energies).reshape(-1,1)
-   print(X.shape)
-   print(Y.shape)
 
    U, S, VH = np.linalg.svd(X,full_matrices=False, compute_uv=True, hermitian=False)
 
-   
-   print("U=",U.shape)
-   print("S=",S.shape)
-   print("VH=",VH.shape)
-
-   print(np.diag(S))
-   print(np.linalg.matrix_rank(np.diag(S)))
-
    Sinv = np.linalg.pinv(np.diag(S), rcond=1e-15, hermitian=True)
-
-   print("Sinv=",Sinv)
-   print(Sinv.shape,np.linalg.matrix_rank(Sinv))
    rank = np.linalg.matrix_rank(Sinv)
 
    V  = VH.transpose()
    Ut = U.transpose()
 
-   B =  V @ Sinv @Ut @ Y
-
-   print("B=",B.shape,B)
-   print("X[0,:]=",X[0,:])
-
-   print("energy1=",Y[0,0])
-   print("calculate energy1=", X[0,:] @ B)
+   B =  V @ Sinv @ Ut @ Y
 
    imin = 0
    imax = 0
@@ -373,14 +356,14 @@ def main():
       print("i=",i, "exact = ",e1, " ecalculate = ",e0, "deltae=",deltae,deltae*27.2116*23.06)
 
    print()
-   print("dEMIN=",demin,demin*27.2116*23.06," imin=",imin," idmin=",idmin)
-   print("dEMAX=",demax,demax*27.2116*23.06," imax=",imax," idmax=",idmax)
+   print("OLS rank=",rank)
+   print("OLS dEMIN=",demin,demin*27.2116*23.06," imin=",imin," idmin=",idmin)
+   print("OLS dEMAX=",demax,demax*27.2116*23.06," imax=",imax," idmax=",idmax)
 
    demid = (demax+demin)/2.0
    dedif = (demax-demin)/2.0
    print()
    print("ReScaling Energies Parameters:")
-   print("rank=",rank)
    print("demin=",demin)
    print("demax=",demax)
    print("demid=",demid)
@@ -467,8 +450,11 @@ def main():
 
    print()
    print("Minimization Parameters:")
-   print("nepoch =",nepoch)
-   print("nbatch =",nbatch)
+   print("ninput  =",ninput)
+   print("nframes =",nframes)
+   print()
+   print("nepoch  =",nepoch)
+   print("nbatch  =",nbatch)
 
    ### generate current ytrain ###
    ytrain = ytrain_generate(machine,weights,xinputs)
